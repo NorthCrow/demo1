@@ -3639,249 +3639,92 @@ myChart.setOption({
             li += "<span class='hardware_name'>" + data.processorName + "</span>"
             container.find("ul").append("<li title='" + data.processorName + "'>" + li + "</li>");
         },
-        //if(this.cfg.resourceId=="HuaweiOceanStorDorado5300V6" || this.cfg.resourceId=="NetappStorage")
-        createChildResInfoNew : function(tdData, ul){
-            if(tdData == undefined){
-                return false;
-            }
-            var li = $("<li/>");
-            var icoDiv = $("<div/>").addClass("stroage_img");
-            var desDiv = $("<div/>").addClass("stroage_txt");
-
-            icoDiv.addClass("storage-disk-l");//1
-
-            desDiv.append("<p>" + tdData.name + "</p>");
-            desDiv.append("<p>总数：" + tdData.count + "</p>");
-            desDiv.append("<p>故障：<span>" + tdData.critical + "</span></p>");
-            li.append(icoDiv).append(desDiv);
-            ul.append(li);
-        },
         createTabs : function(tdDom, tdData, tdSize){
             var that = this;
             var tabsDom =tdDom;// this.createPanel(tdDom, tdData, tdSize);
             var tabsHeight = '206px';
+            for(var i = 0; i < tdData.childtype.length; i ++){
+                var childType = tdData.childtype[i];
 
-            if(this.cfg.resourceId=="HuaweiOceanStorDorado5300V6"){
+                switch(childType){
+                    case "prefmetric":
+                        this.createPrefMetric(tabsDom);
+                        break;
+                    case "infometric":
+                        this.createInfoMetric(tabsDom);
+                        break;
+                    case "storageDevice":
+                        tabsHeight = '236px';
+                        this.createStorageDevice(tdData.value, tabsDom);
+                        break;
+                    case "accessDevice":
+                        tabsHeight = '243px';
+                        this.createAccessDevice(tdData.value, tabsDom);
+                        break;
+                    case "alarm-unRestore":
+                        tabsHeight = '245px';
 
-                for(var i = 0; i < tdData.childtype.length; i ++){
-                    var childType = tdData.childtype[i];
+                        this.createAlarmTabs(tabsDom,'unRecovered');
+                        break;
+                    case "alarm-restore":
+                        tabsHeight = '245px';
+                        this.createAlarmTabs(tabsDom,'recovered');
+                        break;
 
-                    switch(childType){
-                        case "prefmetric":
-                            this.createPrefMetric(tabsDom);
-                            break;
-                        case "infometric":
-                            this.createInfoMetric(tabsDom);
-                            break;
-                        case "storageDevice":
-
-
-                            //var storageDeviceDom = $("<div/>").addClass('storageDevice').attr('title', '');
-                            //tabsDom.append(storageDeviceDom);
-
-                            if(tdData.value == undefined || JSON.stringify(tdData.value) == "{}"){
-                                return false;
-                            }
-                            var controlComponent = $("<div/>").addClass("Storage"), controlUl = $("<ul/>");
-                            controlComponent.append('<h6 style="top: -10px;">存储组件</h6>').append(controlUl);
-                            controlUl.css("height","auto");
-                            controlUl.css("padding-left","20px");
-                            controlComponent.css("height","auto");
-                            controlComponent.css("margin","0px 2px");
-                            controlComponent.css("border","0px solid #2877c3");
-                            if(tdData.value.StorageProcessorSystem != null && tdData.value.StorageProcessorSystem != undefined){
-                                this.createChildResInfoNew(tdData.value.StorageProcessorSystem, controlUl);
-                            }
-                            if(tdData.value.Node != null && tdData.value.Node != undefined){
-                                this.createChildResInfoNew(tdData.value.Node, controlUl);
-                            }
-                            this.createChildResInfoNew(tdData.value.FCPort, controlUl);
-
-                            this.createChildResInfoNew(tdData.value.DiskDrive, controlUl);
-                            this.createChildResInfoNew(tdData.value.StoragePool, controlUl);
-                            this.createChildResInfoNew(tdData.value.StorageVolume, controlUl);
-                            this.createChildResInfoNew(tdData.value.Power, controlUl);
-                            this.createChildResInfoNew(tdData.value.Fan, controlUl);
-                            this.createChildResInfoNew(tdData.value.HardDisk, controlUl);
-                            this.createChildResInfoNew(tdData.value.Disk, controlUl);
-
-
-                            tabsDom.append(controlComponent);
-                            //storageDeviceDom.append("<div class='clear'></div>");
-
-
-                            break;
-                        case "accessDevice":
-                            tabsHeight = '243px';
-                            this.createAccessDevice(tdData.value, tabsDom);
-                            break;
-                        case "alarm-unRestore":
-                            tabsHeight = '245px';
-
-                            this.createAlarmTabs(tabsDom,'unRecovered');
-                            break;
-                        case "alarm-restore":
-                            tabsHeight = '245px';
-                            this.createAlarmTabs(tabsDom,'recovered');
-                            break;
-
-                        default :
-                            this.createChildPanel(tabsDom, childType);
-                            break;
-                    }
-
+                    default :
+                        this.createChildPanel(tabsDom, childType);
+                        break;
                 }
-
-            }else if(this.cfg.resourceId=="NetappStorage"){
-
-                for(var i = 0; i < tdData.childtype.length; i ++){
-                    var childType = tdData.childtype[i];
-
-                    switch(childType){
-                        case "prefmetric":
-                            this.createPrefMetric(tabsDom);
-                            break;
-                        case "infometric":
-                            this.createInfoMetric(tabsDom);
-                            break;
-                        case "storageDevice":
-
-
-                            //var storageDeviceDom = $("<div/>").addClass('storageDevice').attr('title', '');
-                            //tabsDom.append(storageDeviceDom);
-
-                            if(tdData.value == undefined || JSON.stringify(tdData.value) == "{}"){
-                                return false;
-                            }
-                            var controlComponent = $("<div/>").addClass("Storage"), controlUl = $("<ul/>");
-                            controlComponent.append('<h6 style="top: -10px;">存储组件</h6>').append(controlUl);
-                            controlUl.css("height","auto");
-                            controlUl.css("padding-left","20px");
-                            controlComponent.css("height","auto");
-                            controlComponent.css("margin","0px 2px");
-                            controlComponent.css("border","0px solid #2877c3");
-
-                            if(tdData.value.Node != null && tdData.value.Node != undefined){
-                                this.createChildResInfoNew(tdData.value.Node, controlUl);
-                            }
-                            this.createChildResInfoNew(tdData.value.Host, controlUl);
-
-                            this.createChildResInfoNew(tdData.value.Instance, controlUl);
-                            this.createChildResInfoNew(tdData.value.Disk, controlUl);
-                            this.createChildResInfoNew(tdData.value.DiskDrive, controlUl);
-                            this.createChildResInfoNew(tdData.value.StorageVolume, controlUl);
-
-
-                            tabsDom.append(controlComponent);
-                            //storageDeviceDom.append("<div class='clear'></div>");
-
-
-                            break;
-                        case "accessDevice":
-                            tabsHeight = '243px';
-                            this.createAccessDevice(tdData.value, tabsDom);
-                            break;
-                        case "alarm-unRestore":
-                            tabsHeight = '245px';
-
-                            this.createAlarmTabs(tabsDom,'unRecovered');
-                            break;
-                        case "alarm-restore":
-                            tabsHeight = '245px';
-                            this.createAlarmTabs(tabsDom,'recovered');
-                            break;
-
-                        default :
-                            this.createChildPanel(tabsDom, childType);
-                            break;
-                    }
-
-                }
-
-            }else {
-                for(var i = 0; i < tdData.childtype.length; i ++){
-                    var childType = tdData.childtype[i];
-
-                    switch(childType){
-                        case "prefmetric":
-                            this.createPrefMetric(tabsDom);
-                            break;
-                        case "infometric":
-                            this.createInfoMetric(tabsDom);
-                            break;
-                        case "storageDevice":
-                            tabsHeight = '236px';
-                            this.createStorageDevice(tdData.value, tabsDom);
-                            break;
-                        case "accessDevice":
-                            tabsHeight = '243px';
-                            this.createAccessDevice(tdData.value, tabsDom);
-                            break;
-                        case "alarm-unRestore":
-                            tabsHeight = '245px';
-
-                            this.createAlarmTabs(tabsDom,'unRecovered');
-                            break;
-                        case "alarm-restore":
-                            tabsHeight = '245px';
-                            this.createAlarmTabs(tabsDom,'recovered');
-                            break;
-
-                        default :
-                            this.createChildPanel(tabsDom, childType);
-                            break;
-                    }
-                }
-
-                var insId = this.cfg.instanceId;
-                tabsDom.addClass('easyui-tabs').tabs({
-                    width : '100%',
-                    height : tabsHeight,
-                    fit : false,
-                    onSelect:function(title,index){
-                        //信息指标添加刷新按钮
-                        if(index == 1){
-                            var InfoMetricDom = tabsDom.find('div .tabs-wrap > ul');
-                            //			        	InfoMetricDom.append('<span style="height: 27px; float: right; margin-right: 10px;">'+
-                            //				        			'<span class="ico ico-refrash" style="margin-top: 5px;" title="手动采集"></span>'+
-                            //				        			'</span>');
-                            //			        	InfoMetricDom.append(
-                            ////			        			'<div class="right">'+
-                            //			        			'<a id="collectBtn" style="height: 27px; float: right; class="l-btn l-btn-small l-btn-plain" group="">'+
-                            //			        			'<span class="l-btn-left l-btn-icon-left">'+
-                            //			        			'<div class="btn-l">'+
-                            //			        			'<div class="btn-r">'+
-                            //			        			'<div class="btn-m">'+
-                            //			        			'<span class="l-btn-text">采集信息指标</span>'+
-                            //			        			'<span class="l-btn-icon icon-refrash"> </span>'+
-                            //			        			'</div>'+
-                            //			        			'</div>'+
-                            //			        			'</div>'+
-                            //			        			'</span>'+
-                            //			        			'</a>');
-                            //			        			'</div>');
-                            InfoMetricDom.find('#collectBtn').click(function(){
-                                oc.util.ajax({
-                                    url: oc.resource.getUrl('portal/resource/resourceDetailInfo/getMetricHand.htm'),
-                                    data:{instanceId : insId},
-                                    timeout:60000,
-                                    success:function(data){
-                                        if(data.data=="FALSE"){
-                                            alert("采集失败");
-                                        }else{
-                                            alert("指标采集在1分钟以后完成，请稍后进入该页面...");
-                                            InfoMetricDom.find('#collectBtn').unbind("click");
-                                        }
-
-                                    }
-                                });
-                            })
-                        }else{
-                            $('div .tabs-wrap > ul > #collectBtn').remove();
-                        }
-                    }
-                });
             }
+
+            var insId = this.cfg.instanceId;
+            tabsDom.addClass('easyui-tabs').tabs({
+                width : '100%',
+                height : tabsHeight,
+                fit : false,
+                onSelect:function(title,index){
+                    //信息指标添加刷新按钮
+                    if(index == 1){
+                        var InfoMetricDom = tabsDom.find('div .tabs-wrap > ul');
+//			        	InfoMetricDom.append('<span style="height: 27px; float: right; margin-right: 10px;">'+
+//				        			'<span class="ico ico-refrash" style="margin-top: 5px;" title="手动采集"></span>'+
+//				        			'</span>');
+//			        	InfoMetricDom.append(
+////			        			'<div class="right">'+
+//			        			'<a id="collectBtn" style="height: 27px; float: right; class="l-btn l-btn-small l-btn-plain" group="">'+
+//			        			'<span class="l-btn-left l-btn-icon-left">'+
+//			        			'<div class="btn-l">'+
+//			        			'<div class="btn-r">'+
+//			        			'<div class="btn-m">'+
+//			        			'<span class="l-btn-text">采集信息指标</span>'+
+//			        			'<span class="l-btn-icon icon-refrash"> </span>'+
+//			        			'</div>'+
+//			        			'</div>'+
+//			        			'</div>'+
+//			        			'</span>'+
+//			        			'</a>');
+//			        			'</div>');
+                        InfoMetricDom.find('#collectBtn').click(function(){
+                            oc.util.ajax({
+                                url: oc.resource.getUrl('portal/resource/resourceDetailInfo/getMetricHand.htm'),
+                                data:{instanceId : insId},
+                                timeout:60000,
+                                success:function(data){
+                                    if(data.data=="FALSE"){
+                                        alert("采集失败");
+                                    }else{
+                                        alert("指标采集在1分钟以后完成，请稍后进入该页面...");
+                                        InfoMetricDom.find('#collectBtn').unbind("click");
+                                    }
+
+                                }
+                            });
+                        })
+                    }else{
+                        $('div .tabs-wrap > ul > #collectBtn').remove();
+                    }
+                }
+            });
         },
         createAlarmTabs : function(tabsDom,alarmType){
             var that = this;
@@ -3898,32 +3741,171 @@ myChart.setOption({
 
             var detailDg = infoMetricDom.find("."+alarmType);
             var datagrid = oc.ui.datagrid({
-                    selector : detailDg,
-                    fit : true,
-                    queryParams: {
-                        instanceid : insId,//2172
-                        alarmType : alarmType
+                selector : detailDg,
+                fit : true,
+                queryParams: {
+                    instanceid : insId,//2172
+                    alarmType : alarmType
+                },
+                url : oc.resource.getUrl("alarm/alarmManagement/getNotRestoreAlarmForResourceInfoPage.htm"),
+                columns : [ [
+                    {
+                        field : 'content',
+                        title : '告警内容',
+                        width : '70%'
                     },
-                    url : oc.resource.getUrl("alarm/alarmManagement/getNotRestoreAlarmForResourceInfoPage.htm"),
-                    columns : [ [
-                        {
-                            field : 'content',
-                            title : '告警内容',
-                            width : '70%'
-                        },
-                        {
-                            field : 'collectionTime',
-                            title : '产生时间',
-                            width : '30%',
-                            ellipsis : true,
-                            formatter:function(value){
-                                var date = new Date(value);
-                                var str = date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+'  '+(date.getHours()<10?'0'+String(date.getHours()):String(date.getHours()))+':'+(date.getMinutes()<10?'0'+String(date.getMinutes()):String(date.getMinutes()))+':'+(date.getSeconds()<10?'0'+String(date.getSeconds()):String(date.getSeconds()));
-                                return str;
+                    {
+                        field : 'collectionTime',
+                        title : '产生时间',
+                        width : '30%',
+                        ellipsis : true,
+                        formatter:function(value){
+                            var date = new Date(value);
+                            var str = date.getFullYear()+'-'+(date.getMonth()+1)+'-'+date.getDate()+'  '+(date.getHours()<10?'0'+String(date.getHours()):String(date.getHours()))+':'+(date.getMinutes()<10?'0'+String(date.getMinutes()):String(date.getMinutes()))+':'+(date.getSeconds()<10?'0'+String(date.getSeconds()):String(date.getSeconds()));
+                            return str;
+                        }
+                    }] ],
+//				loadFilter : function(data){
+//					var rows = new Array();
+//					for(var i = 0; i < data.data.rows.length; i ++){
+//						var row = data.data.rows[i];
+//						if(!row.isTable){
+//							var currentVal = row.currentVal;
+//							row.currentVal = (currentVal != null && currentVal != undefined) ? currentVal : "--";
+//							var lastCollTime = row.lastCollTime;
+//							row.lastCollTime = !!lastCollTime ? lastCollTime : "--";
+//							rows.push(row);
+//						}
+//					}
+//					data.data.rows = rows;
+//					return data.data;
+//				},
+                onLoadSuccess:function(data){
+                    that.updateTableWidth(datagrid);
+                },
+                fitColumns : false,
+                pagination : true,
+                singleSelect : true
+            });
+
+            return infoMetricDom;
+        },
+        createStorageDevice : function(tdData, tabsDom){
+            var storageDeviceDom = $("<div/>").addClass('storageDevice').attr('title', '存储设备');
+            tabsDom.append(storageDeviceDom);
+
+            if(tdData == undefined || JSON.stringify(tdData) == "{}"){
+                return false;
+            }
+            var controlComponent = $("<div/>").addClass("Storage"), controlUl = $("<ul/>");
+            controlComponent.append("<h6>控制组件</h6>").append(controlUl);
+            if(tdData.StorageProcessorSystem != null && tdData.StorageProcessorSystem != undefined){
+                this.createChildResInfo(tdData.StorageProcessorSystem, controlUl);
+            }
+            if(tdData.Node != null && tdData.Node != undefined){
+                this.createChildResInfo(tdData.Node, controlUl);
+            }
+            this.createChildResInfo(tdData.FCPort, controlUl);
+
+            var storageComponent = $("<div/>").addClass("Storage"), storageUl = $("<ul/>");
+            storageComponent.append("<h6>存储组件</h6>").append(storageUl);
+            this.createChildResInfo(tdData.DiskDrive, storageUl);
+            this.createChildResInfo(tdData.StoragePool, storageUl);
+            this.createChildResInfo(tdData.StorageVolume, storageUl);
+            // this.createChildResInfo(tdData.MDisk, storageUl);
+
+            storageDeviceDom.append(controlComponent);
+            storageDeviceDom.append(storageComponent);
+            storageDeviceDom.append("<div class='clear'></div>");
+        },
+        createAccessDevice : function(tdData, tabsDom){
+            return false;
+            var accessDeviceDom = $("<div/>").addClass('accessDevice').attr('title', '接入设备');
+            tabsDom.append(accessDeviceDom);
+        },
+        createPrefMetric : function(tabsDom){
+            var that = this;
+            var prefMetricDom = $("<div/>").addClass('perfMetric').attr('title', '性能指标');
+            tabsDom.append(prefMetricDom);
+            var introDom = $("<div/>").addClass('intro').css('float', 'left').append($("<div/>").append("<ul/>"));
+            prefMetricDom.append(introDom);
+            var detailDom = $("<div/>").addClass('detail');
+            prefMetricDom.append(detailDom);
+            var infoDom = $("<div/>").addClass('info').width('300px');
+            detailDom.append(infoDom);
+            var valueArray = ['status', 'thresholds', 'currentVal', 'lastCollTime'];
+            var descArray = ['状态', '阈值', '当前值', '最近采集时间'];
+            for(var i = 0; i < valueArray.length; i ++){
+                var innerDom = $("<div/>").addClass('oc-info-boxbg');
+                var descDom = $("<div/>").addClass('oc-info-title').html(descArray[i]);
+                var valueDom = $("<div/>").addClass(valueArray[i]).addClass('oc-info-value');
+                innerDom.append(descDom).append(valueDom);
+                infoDom.append(innerDom);
+            }
+            var hicharDom = $("<div/>").addClass('hichar').css('float', 'right').width('533px').height('152px');
+            var highChartContentDom = $("<div/>").addClass('highChartContent').width('100%').height('100%');
+            hicharDom.append(highChartContentDom);
+            detailDom.append(hicharDom);
+
+            // 性能指标
+            prefMetricDom.find(".intro div").panel({
+                width : '210px',
+                height : '157px',
+                fit : false
+            });
+
+            // HIGHCHART
+            this.createHigchar(prefMetricDom.find(".hichar > .highChartContent"));
+            prefMetricDom.find("ul").tree({
+                fit : true,
+                url : oc.resource
+                    .getUrl("portal/resource/resourceDetailInfo/getMetric.htm?dataType=json" +
+                        "&instanceId=" + that.cfg.instanceId
+                        + "&metricType=PerformanceMetric"),
+                loadFilter : function(data, parent){
+                    var newData = new Array();
+                    var rows = data.data.rows;
+                    for(var i = 0; i < rows.length; i ++){
+                        var row = rows[i];
+                        var color = Highcharts.theme.resourceDetailMetricColors[0];
+                        if(row.isAlarm){
+                            switch(row.status){
+                                case 'CRITICAL':
+                                    color = Highcharts.theme.resourceDetailMetricColors[3];
+                                    break;
+                                case 'SERIOUS':
+                                    color = Highcharts.theme.resourceDetailMetricColors[2];
+                                    break;
+                                case 'WARN':
+                                    color = Highcharts.theme.resourceDetailMetricColors[1];
+                                    break;
+//							case 'UNKOWN':
+//								color = 'gray'
+//								break;
+                                case 'NORMAL':
+                                case 'NORMAL_NOTHING':
+                                    color = Highcharts.theme.resourceDetailMetricColors[0];
+                                    break;
+                                default :
+                                    color = Highcharts.theme.resourceDetailMetricColors[0];
+                                    break;
                             }
-                        }] ],
-                //				loadFilter : function(data){
-                //					var rows = new Array();
-                //					for(var i = 0; i < data.data.rows.length; i ++){
-                //						var row = data.data.rows[i];
-                /
+                        }
+
+//						if(that.cfg.availability == 'CRITICAL' || that.cfg.availability == 'CRITICAL_NOTHING' //|| that.cfg.availability == 'UNKOWN' || that.cfg.availability == 'UNKNOWN_NOTHING'
+//							){
+//							color = 'gray';
+//						}
+
+                        row.text = "<span class='w-ico w-" + color + "ico'/><span title='" + row.text + "'>" + row.text + "</span>";
+                        newData.push({id:row.id,text:row.text,attributes:row});
+                        if(i == 0){
+                            that.clickTree(newData[0], prefMetricDom);
+                        }
+                    }
+                    return newData;
+                },
+                onBeforeLoad : function(node, param){
+                    oc.ui.progress();
+                },
+                onLoadSuccess : function(node, da
