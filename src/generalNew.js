@@ -3908,4 +3908,1737 @@ myChart.setOption({
                 onBeforeLoad : function(node, param){
                     oc.ui.progress();
                 },
-                onLoadSuccess : function(node, da
+                onLoadSuccess : function(node, data){
+                    $.messager.progress('close');
+                    prefMetricDom.find('.tree-icon').each(function(){
+                        var treeIcon = $(this);
+                        treeIcon.removeClass();
+                    });
+                    $(prefMetricDom.find("ul > li").get(0)).find(".tree-node").addClass('tree-node-selected');
+                },
+                onLoadError : function(arguments){
+                    $.messager.progress('close');
+                },
+                onClick : function(node){
+                    that.clickTree(node, prefMetricDom);
+                }
+            });
+
+            return prefMetricDom;
+        },
+        createInfoMetric : function(tabsDom){
+            var that = this;
+            var infoMetricDom = $("<div/>").addClass('infoMetric').attr('title', '信息指标');
+            var detailDom = $("<div/>").addClass('detail');
+            infoMetricDom.append(detailDom);
+            tabsDom.append(infoMetricDom);
+
+            // 信息指标
+            var detailDg = infoMetricDom.find(".detail");
+            that._datagrid = datagrid = oc.ui.datagrid({
+                selector : detailDg,
+                fit : true,
+                url : oc.resource
+                    .getUrl("portal/resource/resourceDetailInfo/getMetric.htm?dataType=json" +
+                        "&instanceId=" + that.cfg.instanceId
+                        + "&metricType=InformationMetric"),
+                columns : [ [
+                    {
+                        field : 'text',
+                        title : '指标名称',
+                        width : '300px'
+                    },
+                    {
+                        field : 'currentVal',
+                        title : '当前值',
+                        width : '558px',
+                        ellipsis : true
+                    }, {
+                        field : 'lastCollTime',
+                        title : '最近采集时间',
+                        width : '200px'
+                    } ] ],
+                loadFilter : function(data){
+                    var rows = new Array();
+                    for(var i = 0; i < data.data.rows.length; i ++){
+                        var row = data.data.rows[i];
+                        if(!row.isTable){
+                            var currentVal = row.currentVal;
+                            row.currentVal = (currentVal != null && currentVal != undefined) ? currentVal : "--";
+                            var lastCollTime = row.lastCollTime;
+                            row.lastCollTime = !!lastCollTime ? lastCollTime : "--";
+                            rows.push(row);
+                        }
+                    }
+                    data.data.rows = rows;
+                    return data.data;
+                },
+                onLoadSuccess:function(data){
+                    that.updateTableWidth(datagrid);
+                },
+                fitColumns : false,
+                pagination : false,
+                singleSelect : true
+            });
+
+            return infoMetricDom;
+        },
+        createAvailabilityMetric : function(tdDom, tdData, tdSize){
+            var that = this;
+            var datagridDom = this.createPanel(tdDom, tdData, tdSize);
+
+            var availabilityMetricDom = $("<div/>").addClass('availabilityMetric').attr('title', '可用性指标');
+            var detailDom = $("<div/>").addClass('detail');
+            availabilityMetricDom.append(detailDom);
+            datagridDom.append(availabilityMetricDom);
+
+            // 信息指标
+            var detailDg = availabilityMetricDom.find(".detail");
+            var datagrid = oc.ui.datagrid({
+                selector : detailDg,
+                fit : false,
+                height : '360px',
+                url : oc.resource
+                    .getUrl("portal/resource/resourceDetailInfo/getMetric.htm?dataType=json" +
+                        "&instanceId=" + that.cfg.instanceId
+                        + "&metricType=AvailabilityMetric"),
+                columns : [ [
+                    {
+                        field : 'text',
+                        title : '指标名称',
+                        width : '300px',
+                        formatter:function(value, row, rowIndex){
+                            //var colorAndTitle = that.returnStatusLight(row.status, 'metric');
+                            //colorAndTitle.attr('title', value).html(value);
+                            return value;
+                        }
+                    },
+                    {
+                        field : 'currentVal',
+                        title : '当前值',
+                        width : '558px',
+                        formatter:function(value, row, rowIndex){
+                            if("1" == value){
+                                value = '可用';
+                            }else if("0" == value){
+                                value = '不可用';
+                            }else if("" == value){
+                                value = '--';
+                            }
+                            return value;
+                        }
+                    }, {
+                        field : 'lastCollTime',
+                        title : '最近采集时间',
+                        width : '200px'
+                    } ] ],
+                loadFilter : function(data){
+                    var rows = new Array();
+                    for(var i = 0; i < data.data.rows.length; i ++){
+                        var row = data.data.rows[i];
+                        if(!row.isTable){
+                            var currentVal = row.currentVal;
+                            row.currentVal = (currentVal != null && currentVal != undefined) ? currentVal : "--";
+                            var lastCollTime = row.lastCollTime;
+                            row.lastCollTime = !!lastCollTime ? lastCollTime : "--";
+                            rows.push(row);
+                        }
+                    }
+                    data.data.rows = rows;
+                    return data.data;
+                },
+                onLoadSuccess:function(data){
+                    that.updateTableWidth(datagrid);
+                },
+                fitColumns : false,
+                pagination : false,
+                singleSelect : true
+            });
+
+            return availabilityMetricDom;
+        },
+        clickTree : function(node, prefMetricDom){
+            var that = this;
+            var status = prefMetricDom.find(".status");
+            var currentVal = prefMetricDom.find(".currentVal");
+            var lastCollTime = prefMetricDom.find(".lastCollTime");
+            var thresholds = prefMetricDom.find(".thresholds");
+            var colorAndTitle = this.returnStatusLight(node.attributes.status, 'metric');
+            status.empty();
+            if(!node.attributes.isAlarm){
+                status.append($("<div/>").html("未设置告警"));
+            }else{
+                status.append(colorAndTitle);
+            }
+            currentVal.html('').html(node.attributes.currentVal);
+            lastCollTime.html('').html(node.attributes.lastCollTime);
+            // 阈值
+            thresholds.empty();
+            if(typeof(node.attributes.thresholds) != 'undefined'){
+                thresholds.append($("<div/>").width('140px').target(eval(node.attributes.thresholds), true));
+            }
+            // highcharts
+            this.chartObj.setIds(node.id, this.cfg.instanceId);
+        },
+        createHigchar : function(container){
+            var highChartsId = 'general_metric_data_chart';
+            var outerDom = $("<div/>").width('100%').height('100%');
+
+            var innerBtnDom1 = $("<div/>").attr('id','metricChartsShowValues')
+                .html('<span><font class="resouse-txt-color">Max</font> : </span><span name="valueMax" ></span><span>&nbsp;&nbsp;</span>'+
+                    '<span><font class="resouse-txt-color">Min</font> : </span><span name="valueMin" ></span><span>&nbsp;&nbsp;</span>'+
+                    '<span><font class="resouse-txt-color">Avg</font> : </span><span name="valueAvg" ></span>'+
+                    '<div class="locate-right"><select id="queryTimeType" class="btnlistarry locate-center"></div></select>');
+
+            var innerBtnDom = $("<div/>").addClass('btnlistarry locate-right').attr('align', 'right').attr('style', 'z-index:999;').attr('id','metricChartsUl');
+            var btnArray = ['1H', '1D', '7D', '30D', '自定义'];
+            var btnClassArray = ['1H', '1D', '7D', '30D', 'dateSelect'];
+            var btnDom = $("<ul/>");
+//			for(var i = 0; i < btnArray.length; i ++){
+//				var btn = btnArray[i];
+//				var btnClass = btnClassArray[i];
+//				btnDom.append($("<li/>").addClass(btnClass).attr('name', 'chartsType' + highChartsId).html(btn));
+//			}
+            var innerHigDom = $("<div/>").attr('id', highChartsId).width('100%').height('120px');
+            container.append(outerDom.append(innerBtnDom1).append(innerBtnDom).append(innerHigDom));
+            this.chartObj = new chartObj(innerHigDom, 1);
+        },
+        createChildPanel : function(tabsDom, childType){
+            var that = this;
+            var panel = $("<div/>").addClass('perfMetric').attr('title', '面板图'); //this.createPanel(tdDom, tdData, tdSize);
+            tabsDom.append(panel);
+            var leftDom = $("<div/>"), leftUpDom = $("<div/>"), leftDownDom = $("<div/>");
+            leftDom.append(leftUpDom).append(leftDownDom);
+//			this.rightDom = $("<div/>");
+            panel.append(leftDom);
+//			.append(this.rightDom);
+
+            leftDom.addClass("intro").css('float', 'left').width('100%').height('166px');
+            leftUpDom.addClass("intro").css('overflow-y', 'auto').css('border', 'none').width('100%').height('117px');
+            leftDownDom.addClass("intro intro-bgcolor").width('100%').height('30px');
+//			this.rightDom.css('float', 'right').css('overflow-y', 'auto').css('display','none').width('20%').height('166px').addClass("intro");
+
+//			var state = ['green', 'green-red', 'red', 'gray', 'white'];
+//			var stateName = ['UP', '协议 DOWN', '管理 DOWN', '未知', '未监控'];
+
+            var state = ['green', 'green-red', 'red', 'white'];
+            var stateName = ['UP', '协议 DOWN', '管理 DOWN', '未监控'];
+
+            for(var i = 0; i < state.length; i ++){
+                var stateNode = $("<div/>").css('float', 'left').css('cursor', 'pointer').attr('state', state[i]).width('120px')
+                    .append($("<span/>").addClass("interface-eq interface-" + state[i]))
+                    .append($("<span/>").addClass('oc-spanlocate').height('100%').html(stateName[i]));
+                leftDownDom.append(stateNode);
+            }
+            leftDownDom.append($("<div/>").addClass('locate-right')
+                .append("<span><input class='logicInterfaceOnOff' type='checkbox' checked=checked style='vertical-align:middle;'></span>").append("<span>显示逻辑接口</span>"));
+            oc.util.ajax({
+                url : oc.resource.getUrl('portal/resource/resourceDetailInfo/getChildInstance.htm'),
+                data : {
+                    instanceId : this.cfg.instanceId,
+                    childType : childType
+                },
+                successMsg:null,
+                success : function(json) {
+                    if (json.code == 200) {
+                        var childArray = [], noLogicInterfaceArray = [], noLogicInterfaceNo = 0;
+                        for(var i = 0 ; i < json.data.length; i ++){
+                            var child = json.data[i];
+                            child.no = i;
+                            childArray.push(child);
+                            if(child.ifType == 'ethernetCsmacd' || child.ifType == 'gigabitEthernet' || child.ifType == 'fibreChannel'){
+                                child.noLogicNo = noLogicInterfaceNo ++;
+                                noLogicInterfaceArray.push(child);
+                            }
+                            // 默认显示第一个接口指标信息
+//							if(i == 0){
+                            // that.childResourceEvent(child.id, child.ifIndex);
+//							}
+                        }
+                        // 加入子资源
+                        that.addChild(leftUpDom, childArray, false);
+                        // 新增接口状态点击事件
+                        // that.addChildClickEvent(leftUpDom, leftDownDom, childArray, false);
+                        // 接口状态记数
+                        that.countInterfaceState(childArray);
+                        // 修改相应状态总数
+                        that.updateStateNodeCount(leftDownDom, state, stateName);
+                        // 过滤逻辑接口事件
+                        leftDownDom.find(".logicInterfaceOnOff").on('click', function(e){
+                            if($(this).is(":checked")){
+                                // 接口状态记数
+                                that.countInterfaceState(childArray);
+                                // 修改相应状态总数
+                                that.updateStateNodeCount(leftDownDom, state, stateName);
+                                that.addChild(leftUpDom, childArray, false);
+                            }else{
+                                // 接口状态记数
+                                that.countInterfaceState(noLogicInterfaceArray);
+                                // 修改相应状态总数
+                                that.updateStateNodeCount(leftDownDom, state, stateName);
+                                that.addChild(leftUpDom, noLogicInterfaceArray, true);
+                            }
+                        });
+                    } else {
+                        alert('没有查询到对应的资源信息');
+                        return false;
+                    }
+                }
+            });
+        },
+        countInterfaceState : function(childArray){
+            var that = this;
+            that.child_up = 0;
+            that.child_down = 0;
+            that.child_unkown = 0;
+            that.child_up_down = 0;
+            that.child_no_monitor = 0;
+            for(var i = 0 ; i < childArray.length; i ++){
+                var child = childArray[i];
+                switch (child.state) {
+                    case 'NOT_MONITORED':
+                        that.child_no_monitor++;
+                        break;
+                    case 'ADMNORMAL_OPERCRITICAL':
+                        that.child_up_down++;
+                        break;
+                    case 'CRITICAL':
+                    case 'CRITICAL_NOTHING':
+                        that.child_down++;
+                        break;
+//				case 'UNKOWN':
+//				case 'UNKNOWN_NOTHING':
+//					that.child_unkown++;
+//					break;
+                    default:
+                        that.child_up++;
+                        break;
+                }
+            }
+        },
+        updateStateNodeCount : function(leftDownDom, state, stateName){
+            var that = this;
+            for(var i = 0; i < state.length; i ++){
+                var stateNode = leftDownDom.find("div[state='" + state[i] + "']").find('.oc-spanlocate');
+                var count = 0;
+                if(state[i] == 'green'){
+                    count = that.child_up;
+                }else if(state[i] == 'red'){
+                    count = that.child_down;
+                }else if(state[i] == 'gray'){
+                    count = that.child_unkown;
+                }else if(state[i] == 'green-red'){
+                    count = that.child_up_down;
+                }else{
+                    count = that.child_no_monitor;
+                }
+                stateNode.html(stateName[i] + " [" + count + "]");
+            }
+        },
+        createDownDevice : function(subInstanceId, ifIndex){
+            var that = this;
+            oc.resource.loadScript("resource_new/module/topo/backboard/DownDeviceDia.js",function(){
+                $.post(oc.resource.getUrl("topo/backboard/downinfo.htm"),{
+                    subInstanceId:subInstanceId,
+                    mainInstanceId:that.cfg.instanceId
+                },function(result){
+                    new DownDeviceDia({
+                        ip:result.ip,		//上联 设备ip
+                        intface:result.IfName,//上联设备接口
+                        deviceName:result.deviceShowName,//上联设备名称
+                        intfaceIndex:ifIndex	//接口索引
+                    });
+                },"json");
+            });
+        },
+        createChildrenResInfo : function(tdData, name){
+            var div = $("<div/>").addClass("Storage").append("<h6>" + name + "</h6>");
+            var ul = $("<ul/>");
+            div.append(ul);
+        },
+        createChildResInfo : function(tdData, ul){
+            if(tdData == undefined){
+                return false;
+            }
+            var li = $("<li/>");
+            var icoDiv = $("<div/>").addClass("stroage_img");
+            var desDiv = $("<div/>").addClass("stroage_txt");
+            switch (tdData.type) {
+                case "StorageProcessorSystem":
+                    icoDiv.addClass("controller-l");//3
+                    break;
+                case "Node":
+                    icoDiv.addClass("controller-l");//3
+                    break;
+                case "FCPort":
+                    icoDiv.addClass("fiber-l");//5
+                    break;
+                case "DiskDrive":
+                    icoDiv.addClass("physics-disk-l");//2
+                    break;
+                case "StoragePool":
+                    icoDiv.addClass("storage-disk-l");//1
+                    break;
+                case "StorageVolume":
+                    icoDiv.addClass("storage-volume-l");//4
+                    break;
+                case "MDisk":
+                    icoDiv.addClass("storage-volume-l");//4
+                    break;
+                default:
+                    break;
+            }
+            desDiv.append("<p>" + tdData.name + "</p>");
+            desDiv.append("<p>总数：" + tdData.count + "</p>");
+            desDiv.append("<p>故障：<span>" + tdData.critical + "</span></p>");
+            li.append(icoDiv).append(desDiv);
+            ul.append(li);
+        },
+        addChildClickEvent : function(leftUpDom, leftDownDom, childArray, isNoLogicInterface){
+            var that = this;
+            leftDownDom.find("div").on('click', function(){
+                var node = $(this);
+                var newDataArray = [], childNo = 0;
+                for(var j = 0; j < childArray.length; j ++){
+                    var child = childArray[j];
+                    switch (node.attr('state')) {
+                        case 'green':
+                            if(child.state != 'NOT_MONITORED' && child.state != 'CRITICAL'
+                                //							&& child.state != 'UNKOWN' && child.state != 'UNKNOWN_NOTHING'
+                                && child.state != 'CRITICAL_NOTHING' && child.state != 'ADMNORMAL_OPERCRITICAL'){
+                                child.no = childNo ++;
+                                newDataArray.push(child);
+                            }
+                            break;
+                        case 'green-red':
+                            if(child.state == 'ADMNORMAL_OPERCRITICAL'){
+                                child.no = childNo ++;
+                                newDataArray.push(child);
+                            }
+                            break;
+                        case 'red':
+                            if(child.state == 'CRITICAL' || child.state == 'CRITICAL_NOTHING'){
+                                child.no = childNo ++;
+                                newDataArray.push(child);
+                            }
+                            break;
+                        case 'white':
+                            if(child.state == 'NOT_MONITORED'){
+                                child.no = childNo ++;
+                                newDataArray.push(child);
+                            }
+                            break;
+                        case 'gray':
+//						if(child.state == 'UNKOWN' || child.state == 'UNKNOWN_NOTHING'){
+//							child.no = childNo ++;
+//							newDataArray.push(child);
+//						}
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                that.addChild(leftUpDom, newDataArray, isNoLogicInterface);
+            });
+        },
+        addChild : function(leftUpDom, childData, isNoLogicInterface){
+            leftUpDom.empty();
+//			this.rightDom.empty();
+//			debugger;
+            var groupCnt = Math.ceil(parseInt(childData.length)/6);
+            var rowCnt = Math.ceil(parseInt(groupCnt)/4);
+            for(var i = 0; i < rowCnt; i ++){
+                var rowDom = $("<div/>").addClass('row').width('100%').height('31px');
+                for(var j = 0; j < 4; j ++){
+                    this.addChildGroup(rowDom, i, j, childData, isNoLogicInterface);
+                }
+                leftUpDom.append(rowDom);
+            }
+        },
+        addChildGroup : function(rowDom, rowNo, groupNo, childData, isNoLogicInterface){
+            var that = this;
+            var groupDom = $("<div/>").addClass('group').css('float', 'left').width('190px').height('100%');
+            var startNo = (rowNo * 4 * 6) + (groupNo * 6);
+            var endNo = Math.min((startNo + 6), childData.length);
+            for(var i = startNo; i < endNo; i ++){
+                var child = childData[i];
+                var childDom = $("<span/>").css('cursor', 'pointer').addClass("interface-eq");
+                switch (child.state) {
+                    case 'NOT_MONITORED':
+                        childDom.addClass("interface-white").attr('no', child.no);
+                        break;
+                    case 'ADMNORMAL_OPERCRITICAL':
+                        childDom.addClass("interface-green-red").attr('no', child.no);
+                        break;
+                    case 'CRITICAL':
+                    case 'CRITICAL_NOTHING':
+                        childDom.addClass("interface-red").attr('no', child.no);
+                        break;
+//				case 'UNKOWN':
+//				case 'UNKNOWN_NOTHING':
+//					childDom.addClass("interface-gray").attr('no', child.no);
+//					break;
+                    default:
+                        childDom.addClass("interface-green").attr('no', child.no);
+                        break;
+                }
+                if(child.noLogicNo != undefined){
+                    childDom.attr('noLogicNo', child.noLogicNo);
+                }
+//				childDom.tooltip({
+//					position : 'right',
+//					content : child.name
+//				});
+//				childDom.attr('title', child.name);
+                groupDom.append(childDom);
+            }
+            //初始化右键menu
+            $('#portMenu').menu({
+                onClick:function(item){
+                    var condition = '';
+                    var instanceId = $(item.target).attr('instanceid');
+                    if(item.text.indexOf('打开') > -1){
+                        condition = 'ifSetAdminUp';
+                    }else if(item.text.indexOf('关闭') > -1){
+                        condition = 'ifSetAdminDown';
+                    }
+                    oc.util.ajax({
+                        url:oc.resource.getUrl("portal/resource/resourceDetailInfo/editPortStatus.htm"),
+                        data:{
+                            instanceId:instanceId,
+                            condition:condition
+                        },
+                        success:function(data){
+                            if(data.data==1){
+                                alert('操作成功！');
+                            }else{
+                                alert('操作失败！');
+                            }
+                        }
+                    });
+                },
+            });
+            groupDom.find('span').each(function(){
+                var interDom = $(this);
+                var no = isNoLogicInterface ? parseInt(interDom.attr('noLogicNo')) : parseInt(interDom.attr('no'));
+                interDom.on('mousedown', function(e){
+                    if(1==e.which){	//左键点击打开详情列表
+                        that.childResourceEvent(childData[no].id, childData[no].ifIndex);
+                    }else if(3==e.which){	//右键菜单
+                        var user = oc.index.getUser();
+                        if(user.systemUser){
+                            $(document).bind('contextmenu.interface-eq',function(e){
+                                e.preventDefault();
+                                $('#portMenu').find('#menu_open').attr('instanceId',childData[no].id);
+                                $('#portMenu').find('#menu_close').attr('instanceId',childData[no].id);
+                                $('#portMenu').menu('show',{
+                                    left:e.pageX,
+                                    top:e.pageY
+                                });
+                                $(document).unbind(".interface-eq");
+                            });
+                        }
+                    }
+                });
+                interDom.on('mouseover', function(e){
+                    if(that.tipTimeId){
+                        clearTimeout(that.tipTimeId);
+                    }
+                    that.tipTimeId=null;
+                    that.tipTimeId=setTimeout(function(){
+                        oc.topo.tips.show({
+                            type:"port",
+                            x:e.pageX,
+                            y:e.pageY-215*1.9,
+                            value:{
+                                instanceId:childData[no].id,
+                                ifIndex:childData[no].ifIndex
+                            }
+                        });
+                        that.tipTimeId=null;
+                    },500);
+                });
+                interDom.mouseout(function(){
+                    if(that.tipTimeId){
+                        clearTimeout(that.tipTimeId);
+                        that.tipTimeId=null;
+                    }
+                    oc.topo.tips.hide();
+                });
+            });
+            if(groupDom.find(".interface-eq").length > 0)
+                rowDom.append(groupDom);
+        },
+        createPie : function(tdDom, tdData, tdSize){
+            var pie = this.createPanel(tdDom, tdData, tdSize);
+            pie.css("height","90%");
+            var unit = tdData.unit == undefined ? "" : tdData.unit;
+            var tmpValue = [];
+            var value = tdData.value;
+            if(value==undefined || value==null || value=="" || value.length==0){
+                if(tdData.categoryId!=undefined && tdData.categoryId!=null && tdData.categoryId=="MacroSANStorages"){
+                    pie.html("<div style='margin-left: 15px;width: 150px;' class='otherTabTip'>抱歉，没有可展示的数据！</div>");
+                }else{
+                    pie.html("<div class='otherTabTip'>抱歉，没有可展示的数据！</div>");
+                }
+                return ;
+            }else{
+
+            }
+            for(var i = 0; i < tdData.value.length; i++){
+                var onePoint = tdData.value[i];
+                tmpValue.push([onePoint[0], parseFloat(onePoint[1])]);
+
+            }
+            value = tmpValue;
+
+            var title = tdData.resourceId == 'IBMDS' && tdData.totalSpace != undefined ? {text:tdData.totalSpace} : null;
+
+            if(tdData.categoryId!=undefined && tdData.categoryId!=null && tdData.categoryId=="MacroSANStorages"){
+                //设置饼图颜色
+                var colors = [];
+                for(var i = 0; i < tdData.value.length; i++){
+                    var onePoint = tdData.value[i];
+                    var colorStr = '#8080C0';//默认
+                    if(onePoint[0] == '正常'){
+                        colorStr = '#00DB00';
+                    }else if(onePoint[0] == '故障'){
+                        colorStr = '#FF5809';
+                    }else if(onePoint[0] == '忽略'){
+                        colorStr = '#80FFFF';
+                    }else if(onePoint[0] == '不在位'){
+                        colorStr = '#D94600';
+                    }else if(onePoint[0] == '未知'){
+                        colorStr = '#8E8E8E';
+                    }else if(onePoint[0] == '待修复'){
+                        colorStr = '#FFE6D9';
+                    }else if(onePoint[0] == '告警'){
+                        colorStr = '#FFFF6F';
+                    }else if(onePoint[0] == '降级'){
+                        colorStr = '#FFF8D7';
+                    }else if(onePoint[0] == '错误'){
+                        colorStr = '#FF8F59';
+                    }
+                    colors.push(colorStr);
+                }
+                pie.css("height","75%");
+                pie.highcharts({
+                    chart: {
+                        plotBackgroundColor: null,
+                        plotBorderWidth: null,
+                        plotShadow: false
+                    },
+                    title: {
+                        text: title
+                    },
+                    legend: {
+                        layout: 'vertical',
+                        align: 'right',
+                        verticalAlign: 'middle',
+                        itemStyle : {
+                            "color" : Highcharts.theme.pieaxisLabelColor,
+                            "font-size" : "12px"
+                        },
+                        itemHoverStyle:{
+                            color:Highcharts.theme.pieaxisLabelColor
+                        },
+                        navigation: {
+                            activeColor: Highcharts.theme.pieactiveColor,
+                            animation: true,
+                            arrowSize: 12,
+                            inactiveColor: Highcharts.theme.pieinactiveColor,
+                            style: {
+                                "font-weight" : 'bold',
+                                "color" :Highcharts.theme.pieFontColor,
+                                "font-size" : '12px'
+                            }
+                        },
+                        //      useHTML:true,
+                        labelFormatter : function(){
+                            var name = this.name;
+                            if(name.length > 10){
+                                name = name.substring(0, 9) + "...";
+                            }
+                            // return "<span title='"+this.name+"' >"+name+"</span>";
+                            return name;
+                        }
+                    },
+                    tooltip: {
+                        enabled: true,
+                        useHTML:true,
+                        formatter : function(){
+                            var y = this.y;
+                            var newUnit = unit;
+                            if(unit == 'Byte'){
+                                if(this.y > (1024 * 1024 * 1024)){
+                                    y = (parseFloat(y) / (parseFloat(1024) * parseFloat(1024) * parseFloat(1024))).toFixed(2);
+                                    newUnit = 'GB';
+                                }else if(this.y > (1024 * 1024)){
+                                    y = (parseFloat(y) / (parseFloat(1024) * parseFloat(1024))).toFixed(2);
+                                    newUnit = 'MB';
+                                }else if(this.y > 1024){
+                                    y = (parseFloat(y) / parseFloat(1024)).toFixed(2);
+                                    newUnit = 'KB';
+                                }
+                            }
+                            $("div.highcharts-tooltip span").css("white-space", "inherit");//允许换行
+                            //重新生成
+
+                            var content = '<div style="font-size: 8px;width: 100px;display:block;word-break: break-all;word-wrap: break-word;">' + this.key+'：'+y+newUnit +'<br/>'
+                                +'</div>';
+                            return content;
+                            //return this.key + ":"+"<br/>"+ y + newUnit;
+                        }
+                    },
+                    plotOptions: {
+                        pie: {
+                            allowPointSelect: true,
+                            cursor: 'pointer',
+                            colors: colors,
+                            dataLabels: {
+                                enabled: true,
+                                distance: 5
+                            },
+                            showInLegend: false
+                        }
+                    },
+                    series: [{
+                        type: 'pie',
+                        name: '',
+                        data: value
+                    }]
+                });
+            }else {
+                pie.highcharts({
+                    chart: {
+                        plotBackgroundColor: null,
+                        plotBorderWidth: null,
+                        plotShadow: false
+                    },
+                    title: {
+                        text: title
+                    },
+                    legend: {
+                        layout: 'vertical',
+                        align: 'right',
+                        verticalAlign: 'middle',
+                        itemStyle : {
+                            "color" : Highcharts.theme.pieaxisLabelColor,
+                            "font-size" : "12px"
+                        },
+                        itemHoverStyle:{
+                            color:Highcharts.theme.pieaxisLabelColor
+                        },
+                        navigation: {
+                            activeColor: Highcharts.theme.pieactiveColor,
+                            animation: true,
+                            arrowSize: 12,
+                            inactiveColor: Highcharts.theme.pieinactiveColor,
+                            style: {
+                                "font-weight" : 'bold',
+                                "color" :Highcharts.theme.pieFontColor,
+                                "font-size" : '12px'
+                            }
+                        },
+                        //      useHTML:true,
+                        labelFormatter : function(){
+                            var name = this.name;
+                            if(name.length > 10){
+                                name = name.substring(0, 9) + "...";
+                            }
+                            // return "<span title='"+this.name+"' >"+name+"</span>";
+                            return name;
+                        }
+                    },
+                    tooltip: {
+                        enabled: true,
+                        useHTML:true,
+                        formatter : function(){
+                            var y = this.y;
+                            var newUnit = unit;
+                            if(unit == 'Byte'){
+                                if(this.y > (1024 * 1024 * 1024)){
+                                    y = (parseFloat(y) / (parseFloat(1024) * parseFloat(1024) * parseFloat(1024))).toFixed(2);
+                                    newUnit = 'GB';
+                                }else if(this.y > (1024 * 1024)){
+                                    y = (parseFloat(y) / (parseFloat(1024) * parseFloat(1024))).toFixed(2);
+                                    newUnit = 'MB';
+                                }else if(this.y > 1024){
+                                    y = (parseFloat(y) / parseFloat(1024)).toFixed(2);
+                                    newUnit = 'KB';
+                                }
+                            }
+                            $("div.highcharts-tooltip span").css("white-space", "inherit");//允许换行
+                            //重新生成
+
+                            var content = '<div style="font-size: 10px;width: 200px;display:block;word-break: break-all;word-wrap: break-word;">' + this.key+'：'+y+newUnit +'<br/>'
+                                +'</div>';
+                            return content;
+                            //return this.key + ":"+"<br/>"+ y + newUnit;
+                        }
+                    },
+                    plotOptions: {
+                        pie: {
+                            allowPointSelect: true,
+                            cursor: 'pointer',
+                            dataLabels: {
+                                enabled: false
+                            },
+                            showInLegend: true
+                        }
+                    },
+                    series: [{
+                        type: 'pie',
+                        name: '',
+                        data: value
+                    }]
+                });
+            }
+            /*pie.highcharts({
+				chart: {
+					type : 'pie',
+		            backgroundColor: 'rgba(0,0,0,0)',
+		            spacing: [0, 0, 0, 0],
+		            options3d: {
+		                enabled: true,
+		                alpha: 45,
+		                beta: 0
+		            }
+				},
+				title : title,
+				legend: {
+		            layout: 'vertical',
+		            align: 'right',
+		            verticalAlign: 'middle',
+		            itemStyle : {
+		            	"color" : "#9EA0A0",
+		            	"font-size" : "8px"
+		            },
+		            navigation: {
+		                activeColor: '#FFFFFF',
+		                animation: true,
+		                arrowSize: 12,
+		                inactiveColor: '#9EA0A0',
+		                style: {
+		                    "font-weight" : 'bold',
+		                    "color" : '#9EA0A0',
+		                    "font-size" : '12px'
+		                }
+		            },
+		            labelFormatter : function(){
+		            	var name = this.name;
+		            	if(name.length > 6){
+		            		name = name.substring(0, 5) + "...";
+		            	}
+		            	return name;
+		            }
+		        },
+		        plotOptions: {
+					pie : {
+						innerSize : '5',
+						showInLegend: true,
+						depth: 35,
+						borderWidth : 0,
+						dataLabels : {
+							enabled : false
+						}
+					}
+		        },
+		        series : [{
+		            type: 'pie',
+		            data: value
+		        }],
+				tooltip : {
+					enabled: true,
+					formatter : function(){
+						var y = this.y;
+						var newUnit = unit;
+						if(unit == 'Byte'){
+							if(this.y > (1024 * 1024 * 1024)){
+								y = (parseFloat(y) / (parseFloat(1024) * parseFloat(1024) * parseFloat(1024))).toFixed(2);
+								newUnit = 'GB';
+							}else if(this.y > (1024 * 1024)){
+								y = (parseFloat(y) / (parseFloat(1024) * parseFloat(1024))).toFixed(2);
+								newUnit = 'MB';
+							}else if(this.y > 1024){
+								y = (parseFloat(y) / parseFloat(1024)).toFixed(2);
+								newUnit = 'KB';
+							}
+						}
+						return this.key + " : " + y + newUnit;
+					}
+				},
+				credits : {
+					enabled: false
+				},
+	    	    exporting : {
+	    	    	enabled: false
+	    	    }
+			});*/
+        },
+        createChildTable : function(tdDom, tdData, tdSize){
+            var childTable = this.createPanel(tdDom, tdData, tdSize);
+            var table = $("<table/>").css({'width':'100%'});
+            childTable.addClass('oc-wbg').css({"overflow-y":"auto"}).append(table);
+            table.append("<tr style='height:30px;text-align:center'><th>存储资源</th><th>状态</th><th>容量</th><th>可用空间</th></tr>");
+            for(var i = 0; tdData.value != null && i < tdData.value.length; i++){
+                var value = tdData.value[i];
+                var name = "<span class='ico ico_vdata ico-vdatatext' title='" + value.Name + "' style='cursor:auto;'>" + value.Name + "</span>";
+//				var name = "<span class='ico ico_vdata' title='"+value.Name+"' style='width:120px;cursor:auto;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;'>" + value.Name + "</span>";
+                var status = value.availabilityStatus == 'CRITICAL' ? "<span>不可用</span>" : "<span class='ico ico_vright' style='cursor:auto;'>正常</span>";
+                table.append("<tr style='height:30px;text-align:center'><td>" + name + "</td><td>" + status + "</td><td>"
+                    + value.DataStorageVolume + "</td><td>" + value.DataStorageFreeSpace + "</td></tr>");
+            }
+        },
+        createEnvironmentPanelDiv:function(tdDom, tdData, tdSize){
+
+            var childTable=this.createPanel(tdDom, tdData, tdSize);
+            var divPanel = $("<div/>").css({'width':'100%'});
+
+            var values = tdData.value;
+            if(values==undefined || values==null || values==""){
+                childTable.addClass('oc-wbg').css({"overflow-y":"auto"}).append("<div class='otherTabTip'>抱歉，没有可展示的数据！</div>");
+                return;
+            }
+            values=[{"metricStr":"rtcBatteryStatus","metricStatus":"CRITICAL"},
+                {"metricStr":"temperatureStatus","metricStatus":"CRITICAL"},
+                {"metricStr":"voltagesStatus","metricStatus":"CRITICAL_NOTHING"},
+                {"metricStr":"fanStatus","metricStatus":"NORMAL"}];
+            if(values)
+                for(var i=0;i<values.length;i++){
+                    var temp = values[i];
+                    var nameP,tempClass="valnet-ico ";
+                    var metricId = temp['metricStr'];
+                    var value = temp['metricStatus'];
+                    switch (metricId) {
+                        case 'rtcBatteryStatus':
+                            nameP = "电池";
+                            if(value=="CRITICAL" || value=="CRITICAL_NOTHING"){
+                                tempClass += "bat-red";
+                            }else{
+                                tempClass += "bat-green";
+                            }
+                            break;
+                        case 'temperatureStatus':
+                            nameP = "温度";
+                            if(value=="CRITICAL" || value=="CRITICAL_NOTHING"){
+                                tempClass += "temper-red";
+                            }else{
+                                tempClass += "temper-green";
+                            }
+                            break;
+                        case 'voltagesStatus':
+                            nameP = "电压";
+                            if(value=="CRITICAL" || value=="CRITICAL_NOTHING"){
+                                tempClass += "voltage-red";
+                            }else{
+                                tempClass += "voltage-green";
+                            }
+                            break;
+                        case 'fanStatus':
+                            nameP = "风扇";
+                            if(value=="CRITICAL" || value=="CRITICAL_NOTHING"){
+                                tempClass += "v-fan-red";
+                            }else{
+                                tempClass += "v-fan-green";
+                            }
+                            break;
+                    }
+
+                    var classTemp = "";
+                    if(values.length==3){
+                        classTemp = "margin: 16px 15px 0px 45px";
+                    }
+                    var div = $("<div class='video_class' style='"+classTemp+"'/>");
+                    var span = $("<span />").addClass(tempClass);
+                    var p = $("<p></p>").html(nameP);
+                    div.append(span).append(p);
+                    divPanel.append(div);
+                }
+
+            childTable.addClass('oc-wbg').css({"overflow-y":"auto","padding":"16px 90px"}).append(divPanel);
+
+
+        },
+        createEnvironmentPanel : function(tdDom, tdData, tdSize){
+            var childTable=tdDom;// = this.createPanel(tdDom, tdData, tdSize);
+            var divPanel = $("<div/>").css({'width':'100%'});
+
+            var values = tdData.value;
+            if(values==undefined || values==null || values==""){
+                childTable.addClass('oc-wbg').css({"overflow-y":"auto"}).append("<div class='otherTabTip'>抱歉，没有可展示的数据！</div>");
+                return;
+            }
+            /*		values=[{"metricStr":"rtcBatteryStatus","metricStatus":"CRITICAL"},
+			        {"metricStr":"temperatureStatus","metricStatus":"CRITICAL"},
+			        {"metricStr":"voltagesStatus","metricStatus":"CRITICAL_NOTHING"},
+			        {"metricStr":"fanStatus","metricStatus":"NORMAL"}];*/
+            if(values)
+                for(var i=0;i<values.length;i++){
+                    var temp = values[i];
+                    var nameP,tempClass="valnet-ico ";
+                    var metricId = temp['metricStr'];
+                    var value = temp['metricStatus'];
+                    switch (metricId) {
+                        case 'rtcBatteryStatus':
+                            nameP = "电池";
+                            if(value=="CRITICAL" || value=="CRITICAL_NOTHING"){
+                                tempClass += "bat-red";
+                            }else{
+                                tempClass += "bat-green";
+                            }
+                            break;
+                        case 'temperatureStatus':
+                            nameP = "温度";
+                            if(value=="CRITICAL" || value=="CRITICAL_NOTHING"){
+                                tempClass += "temper-red";
+                            }else{
+                                tempClass += "temper-green";
+                            }
+                            break;
+                        case 'voltagesStatus':
+                            nameP = "电压";
+                            if(value=="CRITICAL" || value=="CRITICAL_NOTHING"){
+                                tempClass += "voltage-red";
+                            }else{
+                                tempClass += "voltage-green";
+                            }
+                            break;
+                        case 'fanStatus':
+                            nameP = "风扇";
+                            if(value=="CRITICAL" || value=="CRITICAL_NOTHING"){
+                                tempClass += "v-fan-red";
+                            }else{
+                                tempClass += "v-fan-green";
+                            }
+                            break;
+                    }
+
+                    var classTemp = "";
+                    if(values.length==3){
+                        classTemp = "margin: 16px 15px 0px 45px";
+                    }
+                    var div = $("<div class='video_class' style='"+classTemp+"'/>");
+                    var span = $("<span />").addClass(tempClass);
+                    var p = $("<p></p>").html(nameP);
+                    div.append(span).append(p);
+                    divPanel.append(div);
+                }
+
+            childTable.addClass('oc-wbg').css({"overflow-y":"auto","padding":"16px 90px"}).append(divPanel);
+
+        },
+        createMetricTabs : function(tdDom, tdData, tdSize){
+            var childTable = this.createPanel(tdDom, tdData, tdSize);
+            var table = $("<table/>").css({'width':'100%'});
+            childTable.addClass('oc-wbg').css({"overflow-y":"auto"}).append(table);
+
+            var values = tdData.value;
+            //	values=[{"metricName":"sd","value":"s"},{"metricName":"sds","value":"ssssssssss"},{"metricName":"sd2","value":"s"},{"metricName":"sd3","value":"s"}];
+            if(values && values.length>0){
+                table.append("<tr style='height:30px;text-align:center'><th>指标名称</th><th>指标值</th></tr>");
+            }
+            for(var i=0;i<values.length;i++){
+                var temp = values[i];
+                var name = temp['metricName'];
+                var value = temp['value'];
+
+                var nameSpan = "<span style='cursor:auto;'>" + name + "</span>";
+//				var nameSpan = "<div title='"+name+"' style='width:120px;cursor:auto;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;'>" + name + "</div>";
+//				var status = value.availabilityStatus == 'CRITICAL' ? "<span>不可用</span>" : "<span class='ico ico_vright' style='cursor:auto;'>正常</span>";
+                var status = "<span>"+value+"</span>";
+
+                table.append("<tr style='height:30px;text-align:center'><td>" + nameSpan + "</td><td>" + status + "</td></tr>");
+            }
+        },
+        createTableMetric : function(tdDom, tdData, tdSize){
+            var childTable = this.createPanel(tdDom, tdData, tdSize);
+            var table = $("<table/>").css({'width':'100%'});
+
+
+            var values = tdData.value;
+            if(values==undefined || values==null || values==""){
+                childTable.addClass('oc-wbg').css({"overflow-y":"auto"}).append("<div class='otherTabTip'>抱歉，没有可展示的数据！</div>");
+            }else{
+                childTable.addClass('oc-wbg').css({"overflow-y":"auto"}).append(table);
+            }
+            if(values && values.length>0){
+                var valueTemp = values[0]['value']+'';
+
+                if(valueTemp && valueTemp.length>0){
+                    var valueArr = valueTemp.split(',');
+                    for(var i=1;i<valueArr.length;i++){
+                        var value = valueArr[i];
+                        var name = "<div title='"+value+"' style='width:220px;cursor:auto;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;'>" + value + "</div>";
+                        table.append("<tr style='height:30px;text-align:left'><td>" + name + "</td></tr>");
+                    }
+                }
+
+            }
+        },
+        childResourceEvent : function(instanceId, ifIndex){
+            var that = this;
+            this.createDownDevice(instanceId, ifIndex);
+            /*
+			var that = this;
+			that.rightDom.empty();
+			oc.util.ajax({
+				url : oc.resource.getUrl('portal/resource_new/resourceDetailInfo/getAllMetric.htm'),
+				data : {
+					instanceId : instanceId
+				},
+				successMsg:null,
+				success : function(json) {
+					if (json.code == 200) {
+						for(var j = 0; j < json.data.length; j ++){
+							var metric = json.data[j];
+							if(metric.status != 'UNKOWN'){
+								that.rightDom.append(metric.text + " : "
+										+ (typeof(metric.currentVal) == 'undefined'
+											|| metric.currentVal == '' || metric.currentVal == null
+											? '--' : metric.currentVal) + "<br>");
+							}
+						}
+					}
+				}
+			});
+			*/
+        },
+        createTextPanel: function(tdDom,tdData,tdSize){
+            var panelDom = $("<div/>").height('100%');
+            var content = $("<div/>");//.width('100%').height('100%');
+            var container = $("<div/>").addClass("layout-td-panel-bg");
+            tdDom.append(container);
+            tdDom.height(tdData.height);
+            container.append(panelDom.append(content));
+//				container.append(panelDom.append(content));
+            panelDom.panel({
+                title : "基础信息",
+                height : "34%"
+//							,headerCls:'panel_kuan'
+            });
+            return content;
+        },
+        createPanel : function(tdDom, tdData, tdSize){
+
+
+            var width = tdData.type == 'tabs' || tdData.type == 'panel' || tdData.type == 'datagrid'||  tdData.type == 'tabs-full'  ? '100%' : tdData.width=='25%' ? 260 : 320;
+
+
+
+
+
+            /*if(tdData.type == 'commonChildrenPanel' || tdData.type == 'commonOneChildrenPanel' || tdData.type == 'commonOneMetricPanel'){
+				if(tdData.width=='33%'||tdData.width=='34%'){
+					width = '352px';
+				}else{
+					width = '263px';
+				}
+			}else if(tdData.type == 'commonMetricPie'){
+				width = '263px';
+			}else if(tdData.type == 'tabs-full'){
+				width = '100%';
+			}*/
+            //	width = tdData.type == 'pie' && (tdData.resourceId == 'IBMDS' || tdData.resourceId == 'InspurAS' || tdData.categoryId == 'DiskArray') ? '250px' : width;
+
+
+            //	var height = tdData.type == 'tabs' && tdData.metrics != 'none'  ? 236 : tdData.type=='fan' || tdData.type=='battery' || tdData.type=='cpu' ?260:tdData.type=='alarm'|| (tdData.type=='multiprocess' && tdData.height=='60%') || (tdData.type=='bar' && tdData.height=='60%')?320:tdData.type=='multiMeter'?340: 240;
+            //
+            //var height = (tdData.type == 'tabs' && tdData.metrics != 'none') || tdData.type == 'panel'   ? 235:tdData.type=='fan' || tdData.type=='battery' || tdData.type=='cpu'?260:tdData.type=='multiMeter'? 255 : tdData.type=='alarm' ? 300:tdData.type=='multiprocess'?215:(tdData.type=='multiMeter' && tdData.height=='40%') ? 330: tdData.type=='multiprocess' ? 255:385;
+            var height=385;
+            if( (tdData.type == 'tabs' && tdData.metrics != 'none') || tdData.type == 'panel' ){
+                height=215;
+                /*if(tdData.categoryId=='DiskArray' && tdData.type=='pie'){
+				height=220;
+			}*/
+            }else if(tdData.width=='25%' || tdData.type=='pie'  ){
+                height=220;
+            }else if(tdData.type=='alarm'){
+                height=260;
+            }else if((tdData.type=='multiMeter' || tdData.type=='graph' || tdData.type=='table' || tdData.type=='graph' || tdData.type=="node") && tdData.height=='40%' ){
+                height=217;
+            }else if(tdData.type=='multiprocess' || tdData.type=='bar'){
+                if(tdData.height=='60%'){
+                    height=353;
+                }else{
+                    height=217;
+                }
+
+            }else if(tdData.type=="tableMetrics"){
+                if(tdData.height=='100%'){
+                    height=482;//575;
+                    width=412;
+                }else{
+                    height=277;
+                    width=320;
+                }
+
+            }else if(tdData.type=='multiInterface'){
+                height=170;
+            }else if( tdData.type=='gauge' || tdData.type=='pie'  ){
+                height=220;
+            }else if(tdData.type=='mulitpie' || tdData.type=='graph'){
+                height=217;
+            }else if(tdData.type=='datagrid'){
+                height=345;
+                tdDom.attr('colspan','3');
+            }else if(tdData.type=='others' ){
+                if(tdData.height=='35%'){
+                    height=126;
+                }else{
+                    height=217;
+                }
+
+            }
+
+
+
+            if(tdData.type == 'tabs-full'){
+                height = 280;
+            }
+            var titleName = (tdData.name == undefined || tdData.name == '' || tdData.name == null)
+                ? tdData.title==undefined?"":tdData.title : tdData.name;
+            if(tdData.id == 'throughput'){
+                titleName += '(最近4小时)';
+            }
+            if(tdData.length!=undefined){
+                var container = $("<div/>").addClass("layout-td-panel-bg");
+                tdDom.append(container);
+                var panelDom = $("<div/>");
+                var contents=$("<div/>").width('100%').height('100%').css({"position":"relative"});
+                var childwidth="100%"; var childHeight="100%";var titleShow="";
+                if(tdData[0].type=="mulitgraph"){
+                    if(this.cfg.categoryId=="JDBCModel"){
+                        titleShow="性能信息";
+                        height=482;//575;
+                        width=412;
+
+                    }else{
+                        titleShow="";
+                    }
+
+                }else if(tdData[0].type=="mulitgauge"  ){//|| tdData[0].type=="gauge"
+                    //gaugeShowTop
+                    contents.addClass("gaugeShowTop");
+                    childwidth="50%";
+                    height=482;//575;
+                    width=412;
+                    titleShow="性能信息";
+                }else if(tdData[0].type=="mulitpie"){
+                    height=217;
+
+                    childwidth="120px";
+                    //	height="220px";
+                    titleShow=tdData[0].title;//"数据库占用性能";
+                }else if(tdData[0].type=="tabPanel"){
+                    if(tdData[0].categoryId=="MacroSANStorages"){
+                        titleShow="性能信息";
+                        height=180;//575;
+                        width=532;
+                    }else{
+                        container.css("float","left");
+                        width=700;
+                        height=243;
+                        //width=760;
+                    }
+                }
+
+                for(var i=0;i<tdData.length;i++){
+
+
+                    var content = $("<div/>").width(childwidth).height(childHeight);
+                    if(tdData[0].type=="tabPanel"){
+                        if(tdData[0].categoryId=="MacroSANStorages"){
+                            content.css("margin-left", "22px");
+                        }
+                    }
+
+                    content.width(tdData[i].width);
+                    /*	if(tdData[0].type=="tabPanel"){
+						if(i==0){
+							content.width(tdData[i].width);
+						}else if(i==1){
+							content.width(tdData[i].width);
+						}else{
+							content.width(tdData[i].width);
+						}
+
+				}*/
+                    content.css("float","left");
+                    if(tdData[i].id==null && tdData[i].metrics=='none'){
+                        content.addClass("tabs");
+                    }else{
+
+                        content.addClass(tdData[i].id);
+                    }
+
+                    if(tdData[0].type=="mulitgauge" || tdData[0].type=="mulitgraph"){//中间td增加单独的样式，作为单独处理背景颜色调试的class
+                        content.addClass("gaugeShow");
+                    }
+
+                    /*	if(tdData.type == 'environmentPanel'){
+							width = 440;
+					}
+					else if(tdData.type == 'metricTabs'){
+						var widthNum ;
+						if(tdData.width){
+							widthNum = tdData.width.replace('%','');
+						}
+						if(widthNum>30){
+							width = 352;
+						}else{
+							//设置为0,自动分配宽度
+							width = 0;
+						}
+					}else if(tdData.type == 'tableMetric'){
+						width = 0;
+					}else if(tdData.type == 'node'){
+						width = 352;
+					}*/
+
+                    //	titleName="";
+                    if(tdData[i].childtype!='alarm' ){//tabpanel布局下，alarm不形成一个单独的div,而是append in tabpanel
+                        if(tdData[i].type!='others'){
+                            contents.append(content);
+                        }
+                    }
+
+
+
+
+                }
+                panelDom.append("<span class='layout-title'>"+titleShow+"</span>");
+                container.append(panelDom.append(contents));
+
+                panelDom.css({
+                    //	title : titleShow,
+                    "width" : width,
+                    "height" : height
+                });
+
+                return contents;
+            }else{
+                var container = $("<div/>").addClass("layout-td-panel-bg");
+                tdDom.append(container);
+
+                var panelDom = $("<div/>");
+                var content = $("<div/>").width('100%').height('100%').css({"position":"relative"});
+
+                if(tdData.type == 'pie'){
+                    if(tdData.categoryId!=undefined && tdData.categoryId!=null){
+                        if(tdData.categoryId == 'MacroSANStorages'){
+                            container.css("height", "30%");
+                            container.css("width", "32%");
+                            container.css("float","left");
+                            width=173;
+                            height=142;
+                        }
+                    }
+                }
+                /*
+				if(tdData.type == 'environmentPanel'){
+						width = 440;
+				}
+				else if(tdData.type == 'metricTabs'){
+					var widthNum ;
+					if(tdData.width){
+						widthNum = tdData.width.replace('%','');
+					}
+					if(widthNum>30){
+						width = 352;
+					}else{
+						//设置为0,自动分配宽度
+						width = 0;
+					}
+				}else if(tdData.type == 'tableMetric'){
+					width = 0;
+				}else if(tdData.type == 'node'){
+					width = 352;
+				}else if(tdData.type=='datagrid'){
+					height=345;
+
+				}*/
+                if(tdData.type=='gauge'){
+                    titleName='性能信息';
+                }
+                panelDom.append("<span class='layout-title'>"+titleName+"</span>");
+                container.append(panelDom.append(content));
+                if(tdSize==3 && tdDom[0].cellIndex==1){
+                    //	panelDom.addClass('panel-content-Cls');
+                    panelDom.css({
+                        //title : titleName,
+                        "width" : width,
+                        "height" : height
+//							,headerCls:'panel_kuan'
+                    });
+                }else{
+                    if(tdData.type=='fan' || tdData.type=='battery' || tdData.type=='cpu'){
+                        //height='100%';
+                    }
+
+                    panelDom.css({
+                        //title : titleName,
+                        "width" : width,
+                        "height" : height
+                    });
+
+                }
+                return content;
+            }
+
+
+
+        },
+        returnColorByStatus : function(status){
+            var newStatus = status
+//			if(this.cfg.availability == 'CRITICAL' || this.cfg.availability == 'CRITICAL_NOTHING'
+//				|| this.cfg.availability == 'UNKNOWN_NOTHING' || this.cfg.availability == 'UNKOWN'){
+//				newStatus = 'UNKOWN';
+//			}
+            var color = Highcharts.theme.resourceDetailMetricColors[0];//'#00C803';
+            switch(newStatus){
+                case 'CRITICAL':
+                    color = Highcharts.theme.resourceDetailMetricColors[3];
+                    break;
+                case 'SERIOUS':
+                    color = Highcharts.theme.resourceDetailMetricColors[2];
+                    break;
+                case 'WARN':
+                    color = Highcharts.theme.resourceDetailMetricColors[1];
+                    break;
+//			case 'UNKOWN':
+//				color = '#797979';
+//				break;
+                case 'NORMAL':
+                case 'NORMAL_NOTHING':
+                    color = Highcharts.theme.resourceDetailMetricColors[0];
+                    break;
+                default :
+                    color = Highcharts.theme.resourceDetailMetricColors[0];
+                    break;
+            }
+            return color;
+        },
+        returnStatusLight : function(status, type){
+            var newStatus = status
+            if(type == 'mainInstance'){
+                var color = 'light-ico_resource res_unknown_nothing';
+                switch (newStatus) {
+                    case 'CRITICAL':
+                        color = "light-ico_resource res_critical";
+                        break;
+                    case 'CRITICAL_NOTHING':
+                        color = "light-ico_resource res_critical_nothing";
+                        break;
+                    case 'SERIOUS':
+                        color = "light-ico_resource res_serious";
+                        break;
+                    case 'WARN':
+                        color = "light-ico_resource res_warn";
+                        break;
+                    case 'NORMAL':
+                    case 'NORMAL_NOTHING':
+                        color = "light-ico_resource res_normal_nothing";
+                        break;
+                    case 'NORMAL_CRITICAL':
+                        color = "light-ico_resource res_normal_critical";
+                        break;
+                    case 'NORMAL_UNKNOWN':
+                        color = "light-ico_resource res_normal_unknown";
+                        break;
+//				case 'UNKNOWN_NOTHING':
+//					color = "light-ico_resource res_unknown_nothing";
+//					break;
+//				case 'UNKOWN':
+//					color = "light-ico_resource res_unkown";
+//					break;
+                    default :
+                        color = "light-ico_resource res_normal_nothing";
+                        break;
+                }
+                var html='<div style="min-width: 25px !important;" class="'+color+'"></div><br>'
+                return color;
+            }else{
+//				if(this.cfg.availability == 'CRITICAL' || this.cfg.availability == 'CRITICAL_NOTHING' || this.cfg.availability == 'UNKOWN' || this.cfg.availability == 'UNKNOWN_NOTHING'){
+//					newStatus = 'UNKOWN';
+//				}
+                var color = Highcharts.theme.resourceDetailMetricColors[0];
+                var title = '未知';
+                switch (newStatus) {
+                    case 'CRITICAL':
+                        color = Highcharts.theme.resourceDetailMetricColors[3];
+                        title = '致命';
+                        break;
+                    case 'SERIOUS':
+                        color = Highcharts.theme.resourceDetailMetricColors[2];
+                        title = '严重';
+                        break;
+                    case 'WARN':
+                        color = Highcharts.theme.resourceDetailMetricColors[1];
+                        title = '警告';
+                        break;
+//				case 'UNKOWN':
+//					color = 'gray';
+//					title = '未知';
+//					break;
+                    case 'UNKOWN':
+                    case 'UNKNOWN_NOTHING':
+                    case 'NORMAL':
+                        color = Highcharts.theme.resourceDetailMetricColors[0];
+                        title = '正常';
+                        break;
+                }
+                return $("<label/>").css('cssText', 'min-width:25px !important').addClass("light-ico " + color + "light").attr('title', title);
+            }
+        },
+        createTinyTool : function(container){
+            var that = this;
+
+            /*		if(this.cfg.hasCustomMetric){
+				if(this.cfg.resourceType == 'Host' || this.cfg.resourceType == 'NetworkDevice'){
+					var customMetric = $("<a class='resource_alarm'/>");
+					container.append(customMetric);
+					customMetric.linkbutton("RenderLB", {
+						text : '自定义指标',
+						onClick : function(){
+							that.customMetricBtnEvent(that.cfg.instanceId);
+						}
+					});
+				}
+			}*/
+
+            //创建小工具
+            var ResourceCategory = 0;
+            if(this.cfg.resourceType == 'Host'){
+                ResourceCategory = 1;
+            }else if(this.cfg.resourceType == 'NetworkDevice' || this.cfg.resourceType == 'SnmpOthers'){
+                ResourceCategory = 2;
+            }else if(this.cfg.resourceType == 'Database'){
+                ResourceCategory = 3;
+            }
+            if(ResourceCategory != 0){
+                oc.resource.loadScript('resource/module/resource-management/resourceDetailInfo/tinytool/js/tinytool.js',function(){
+                    oc.module.resmanagement.resdeatilinfo.tinytools.init(ResourceCategory,that.cfg, container);
+                });
+            }
+
+
+
+        },
+        alarmBtnEvent : function(instanceId){},
+        bizBtnEvent : function(instanceId){},
+        customMetricBtnEvent : function(instanceId){},
+        updateTableWidth : function(grid){}
+    }
+
+    //-- 单位转换方法开始 --
+    function unitTransform(value,unit){
+        var str;
+        var valueTemp;
+        if(null==value){
+            return '--';
+        }
+        if(isNaN(value)){
+            valueTemp = new Number(value.trim());
+        }else{
+            valueTemp = new Number(value);
+        }
+
+        if(isNaN(valueTemp)){
+            return value + unit;
+        }
+        switch(unit){
+            case "ms":
+            case "毫秒":
+                str = transformMillisecond(valueTemp);
+                break;
+            case "s":
+            case "秒":
+                str = transformSecond(valueTemp);
+                break;
+            case "Bps":
+                str = transformByteps(valueTemp);
+                break;
+            case "bps":
+            case "比特/秒":
+                str = transformBitps(valueTemp);
+                break;
+            case "KB/s":
+                str = transformKBs(valueTemp);
+                break;
+            case "Byte":
+                str = transformByte(valueTemp);
+                break;
+            case "KB":
+                str = transformKB(valueTemp);
+                break;
+            case "MB":
+                str = transformMb(valueTemp);
+                break;
+            default:
+                str = value + unit;
+                break;
+        }
+        return str;
+
+    }
+    function transformMillisecond(milliseconds){
+        var millisecond = milliseconds;
+        var seconds = 0, second = 0;
+        var minutes = 0, minute = 0;
+        var hours = 0, hour = 0;
+        var day = 0;
+        if(milliseconds > 1000){
+            millisecond = milliseconds % 1000;
+            second = seconds = (milliseconds - millisecond) / 1000;
+        }
+        if(seconds > 60){
+            second = seconds % 60;
+            minute = minutes = (seconds - second) / 60;
+        }
+        if(minutes > 60){
+            minute = minutes % 60;
+            hour = hours = (minutes - minute) / 60;
+        }
+        if(hours > 24){
+            hour = hours % 24;
+            day = (hours - hour) / 24;
+        }
+        var sb = "";
+        sb = day > 0 ? (sb+=(day + "天")) : sb;
+        sb = hour > 0 ? (sb+=(hour + "小时")) : sb;
+        sb = minute > 0 ? (sb+=(minute + "分")) : sb;
+        sb = second > 0 ? (sb+=(second + "秒")) : sb;
+        sb = millisecond > 0 ? (sb+=(millisecond + "毫秒")) : sb;
+        sb = ""==sb ? (sb+=(millisecond + "毫秒")) : sb;
+        return sb;
+    }
+
+    function transformSecond(seconds){
+        var second = seconds;
+        var minutes = 0, minute = 0;
+        var hours = 0, hour = 0;
+        var day = 0;
+        if(seconds > 60){
+            second = seconds % 60;
+            minute = minutes = (seconds - second) / 60;
+        }
+        if(minutes > 60){
+            minute = minutes % 60;
+            hour = hours = (minutes - minute) / 60;
+        }
+        if(hours > 24){
+            hour = hours % 24;
+            day = (hours - hour) / 24;
+        }
+        var sb = "";
+        sb = day > 0 ? (sb+=(day + "天")) : sb;
+        sb = hour > 0 ? (sb+=(hour + "小时")) : sb;
+        sb = minute > 0 ? (sb+=(minute + "分")) : sb;
+        sb = second > 0 ? (sb+=(second + "秒")) : sb;
+        sb = ""==sb.toString() ? (sb+=(second + "秒")) : sb;
+        return sb;
+    }
+
+    function transformByteps(bpsNum){
+        var sb = "";
+        var precision = 2;
+        if(bpsNum > 1000 * 1000 * 1000){
+            sb+=(bpsNum / (1000 * 1000 * 1000)).toFixed(precision) + "GBps";
+        }else if(bpsNum > 1000 * 1000){
+            sb+=(bpsNum / (1000 * 1000)).toFixed(precision) + "MBps";
+        }else if(bpsNum > 1000){
+            sb+=(bpsNum / 1000).toFixed(precision) + "KBps";
+        }else{
+            sb+=bpsNum.toFixed(precision) + "Bps";
+        }
+        return sb;
+    }
+    function transformBitps(bpsNum){
+        var sb = "";
+        var precision = 2;
+        if(bpsNum > 1000 * 1000 * 1000){
+            sb+=(bpsNum / (1000 * 1000 * 1000)).toFixed(precision) + "Gbps";
+        }else if(bpsNum > 1000 * 1000){
+            sb+=(bpsNum / (1000 * 1000)).toFixed(precision) + "Mbps";
+        }else if(bpsNum > 1000){
+            sb+=(bpsNum / 1000).toFixed(precision) + "Kbps";
+        }else{
+            sb+=bpsNum.toFixed(precision) + "bps";
+        }
+        return sb;
+    }
+
+    function transformKBs(KBsNum){
+        var sb = "";
+        var precision = 2;
+        if(KBsNum > 1024 * 1024){
+            sb+=(KBsNum / (1024 * 1024)).toFixed(precision) + "GB/s";
+        }else if(KBsNum > 1024){
+            sb+=(KBsNum / 1024).toFixed(precision) + "MB/s";
+        }else{
+            sb+=KBsNum.toFixed(precision) + "KB/s";
+        }
+        return sb;
+    }
+
+    function transformByte(byteNum){
+        var sb = "";
+        var precision = 2;
+
+        if(byteNum > 1024 * 1024 * 1024){
+            sb+=(byteNum / (1024 * 1024 * 1024)).toFixed(precision) + "GB";
+        }else if(byteNum > 1024 * 1024){
+            sb+=(byteNum / (1024 * 1024)).toFixed(precision) + "MB";
+        }else if(byteNum > 1024){
+            sb+=(byteNum / 1024).toFixed(precision) + "KB";
+        }else{
+            sb+=byteNum.toFixed(precision) + "Byte";
+        }
+        return sb;
+    }
+
+    function transformKB(KBNum){
+        var sb = "";
+        var precision = 2;
+
+        if(KBNum > 1024 * 1024){
+            sb+=(KBNum / (1024 * 1024)).toFixed(precision) + "GB";
+        }else if(KBNum > 1024){
+            sb+=(KBNum / 1024).toFixed(precision) + "MB";
+        }else{
+            sb+=KBNum.toFixed(precision) + "KB";
+        }
+        return sb;
+    }
+
+    function transformMb(mbNum){
+        var sb = "";
+        var precision = 2;
+
+        if(mbNum > 1024){
+            sb+=(mbNum / 1024).toFixed(precision) + "GB";
+        }else{
+            sb+=mbNum.toFixed(precision) + "MB";
+        }
+        return sb;
+    }
+    //-- 单位转换方法结束 --
+
+    oc.ns('oc.module.resmanagement.resdeatilinfo');
+    oc.module.resmanagement.resdeatilinfo.general = {
+        open : function(cfg) {
+            var gen = new general(cfg);
+            gen.open();
+
+
+
+        },
+        unitTransform : function(value,unit){
+            return unitTransform(value,unit);
+        }
+    }
+});
+function clickInfo(){
+    alert("clicjkkk");
+}
