@@ -174,7 +174,12 @@ $(function() {
             }
 
             tdDom.append(divDom);
-            if(divData.length==2 && !divData[0].companType){//gauge
+            var isSpecial = false;
+            if(divData[0].categoryId != undefined && divData[0].categoryId != null && divData[0].categoryId == 'HIKVisionStorages'){
+                isSpecial = true;
+            }
+
+            if(divData.length==2 && !divData[0].companType && !isSpecial){//gauge
                 switch(divData[0].type){
                     case "mulitpie" :
                         this.createmulitpie(divDom, divData,divData.length);
@@ -186,7 +191,7 @@ $(function() {
                 }
 
 
-            }else if((divData.length==4 || divData.length==3  || divData.length==2) && !divData[0].companType){
+            }else if((divData.length==4 || divData.length==3  || divData.length==2) && !divData[0].companType && !isSpecial){
                 if(divData[0].type=='tabPanel'){
                     tdDom.attr('colspan',divData[0].colspan);
                     this.createtabPanel(divDom, divData,divData.length);
@@ -2667,7 +2672,7 @@ myChart.setOption({
 
                     graph=tdDom;
                     metricId=tdData.id;
-                }else if(tdData.id=='throughput' || tdData.id=='totalIops' || tdData.id=='NetworkUsed' || tdData.id=='KBytesTransSpeed' || tdData.id=='icmpDelayTime' || tdData.id=='cpuLoad' ){
+                }else if(tdData.id=='throughput' || tdData.id=='NetworkUsed' || tdData.id=='KBytesTransSpeed' || tdData.id=='icmpDelayTime' || tdData.id=='cpuLoad' ){
                     graph = this.createPanel(tdDom, tdData, tdSize);
 
                     metricId=tdData.id;
@@ -2695,7 +2700,7 @@ myChart.setOption({
                     tdData.historyDataColTim = [];
                     //graph.css('height','100%');
                 }else{
-                    if(tdData.id=='throughput' || tdData.id=='totalIops' || tdData.id=='NetworkUsed' || tdData.id=='KBytesTransSpeed' || tdData.id=='icmpDelayTime' || tdData.id=='cpuLoad' || tdData.id=='SystemTemperature'){
+                    if(tdData.id=='throughput' || tdData.id=='NetworkUsed' || tdData.id=='KBytesTransSpeed' || tdData.id=='icmpDelayTime' || tdData.id=='cpuLoad' || tdData.id=='SystemTemperature'){
                         //	graph.css('width','95%');
                         graph.css('height','80%');
 
@@ -2713,7 +2718,7 @@ myChart.setOption({
 
                 var html='<fieldset style="width: 100%; height: 100%;"><legend>'+tdData.title+'(最近4小时)</legend>'+'单位:'+unit+'</span><div class="lines" style="width: 100%; height: 80%;"></div></fieldset>';//width: 100%; height: 35%; float: left;
 
-                if(tdData.id=='throughput' || tdData.id=='totalIops' || tdData.id=='NetworkUsed' || tdData.id=='KBytesTransSpeed' || tdData.id=='icmpDelayTime' || tdData.id=='cpuLoad' ){
+                if(tdData.id=='throughput' || tdData.id=='NetworkUsed' || tdData.id=='KBytesTransSpeed' || tdData.id=='icmpDelayTime' || tdData.id=='cpuLoad' ){
 
                     var currentgraph=graph;
                     currentgraph.css({"height":"85%"});
@@ -3799,6 +3804,10 @@ myChart.setOption({
             }
             var controlComponent = $("<div/>").addClass("Storage"), controlUl = $("<ul/>");
             controlComponent.append("<h6>控制组件</h6>").append(controlUl);
+            //控制组件布局
+            controlComponent.css("height", "auto");
+            controlUl.css("height", "auto");
+
             if(tdData.StorageProcessorSystem != null && tdData.StorageProcessorSystem != undefined){
                 this.createChildResInfo(tdData.StorageProcessorSystem, controlUl);
             }
@@ -3809,10 +3818,20 @@ myChart.setOption({
 
             var storageComponent = $("<div/>").addClass("Storage"), storageUl = $("<ul/>");
             storageComponent.append("<h6>存储组件</h6>").append(storageUl);
+            //存储组件布局
+            storageComponent.css("height", "auto");
+            storageUl.css("height", "auto");
+
             this.createChildResInfo(tdData.DiskDrive, storageUl);
             this.createChildResInfo(tdData.StoragePool, storageUl);
             this.createChildResInfo(tdData.StorageVolume, storageUl);
             // this.createChildResInfo(tdData.MDisk, storageUl);
+
+            this.createChildResInfo(tdData.Fan, storageUl);
+            this.createChildResInfo(tdData.Power, storageUl);
+            this.createChildResInfo(tdData.Battery, storageUl);
+            this.createChildResInfo(tdData.NetInterface, storageUl);
+            this.createChildResInfo(tdData.Partition, storageUl);
 
             storageDeviceDom.append(controlComponent);
             storageDeviceDom.append(storageComponent);
@@ -4263,31 +4282,15 @@ myChart.setOption({
             var li = $("<li/>");
             var icoDiv = $("<div/>").addClass("stroage_img");
             var desDiv = $("<div/>").addClass("stroage_txt");
-            switch (tdData.type) {
-                case "StorageProcessorSystem":
-                    icoDiv.addClass("controller-l");//3
-                    break;
-                case "Node":
-                    icoDiv.addClass("controller-l");//3
-                    break;
-                case "FCPort":
-                    icoDiv.addClass("fiber-l");//5
-                    break;
-                case "DiskDrive":
-                    icoDiv.addClass("physics-disk-l");//2
-                    break;
-                case "StoragePool":
-                    icoDiv.addClass("storage-disk-l");//1
-                    break;
-                case "StorageVolume":
-                    icoDiv.addClass("storage-volume-l");//4
-                    break;
-                case "MDisk":
-                    icoDiv.addClass("storage-volume-l");//4
-                    break;
-                default:
-                    break;
-            }
+
+            //显示子资源图片
+            icoDiv.css("width", "42px");
+            icoDiv.css("height", "40px");
+            icoDiv.css("margin-right", "5px");
+            icoDiv.css("margin-top", "10px");
+            icoDiv.addClass(tdData.type);
+
+
             desDiv.append("<p>" + tdData.name + "</p>");
             desDiv.append("<p>总数：" + tdData.count + "</p>");
             desDiv.append("<p>故障：<span>" + tdData.critical + "</span></p>");
@@ -4476,52 +4479,52 @@ myChart.setOption({
             var tmpValue = [];
             var value = tdData.value;
             if(value==undefined || value==null || value=="" || value.length==0){
-                if(tdData.categoryId!=undefined && tdData.categoryId!=null && tdData.categoryId=="MacroSANStorages"){
+                if(tdData.categoryId != undefined && tdData.categoryId != null && tdData.categoryId == 'HIKVisionStorages' && tdData.forType != 'spaceUsage' && tdData.forType != 'nodeDevice'){
                     pie.html("<div style='margin-left: 15px;width: 150px;' class='otherTabTip'>抱歉，没有可展示的数据！</div>");
-                }else{
+                }else {
                     pie.html("<div class='otherTabTip'>抱歉，没有可展示的数据！</div>");
                 }
                 return ;
             }else{
 
             }
+            var totalValue = 0.0;
+            var isDiskArray = tdData.categoryId != undefined && tdData.categoryId != null && tdData.categoryId == 'DiskArray' ? true : false;
             for(var i = 0; i < tdData.value.length; i++){
                 var onePoint = tdData.value[i];
                 tmpValue.push([onePoint[0], parseFloat(onePoint[1])]);
-
+                totalValue = totalValue + parseFloat(onePoint[1]);
             }
             value = tmpValue;
 
             var title = tdData.resourceId == 'IBMDS' && tdData.totalSpace != undefined ? {text:tdData.totalSpace} : null;
 
-            if(tdData.categoryId!=undefined && tdData.categoryId!=null && tdData.categoryId=="MacroSANStorages"){
-                //设置饼图颜色
+            if(tdData.categoryId != undefined && tdData.categoryId != null && tdData.categoryId == 'HIKVisionStorages' && tdData.forType != 'spaceUsage'){
+                //设置环形百分比图颜色
                 var colors = [];
                 for(var i = 0; i < tdData.value.length; i++){
                     var onePoint = tdData.value[i];
-                    var colorStr = '#8080C0';//默认
-                    if(onePoint[0] == '正常'){
-                        colorStr = '#00DB00';
-                    }else if(onePoint[0] == '故障'){
-                        colorStr = '#FF5809';
-                    }else if(onePoint[0] == '忽略'){
-                        colorStr = '#80FFFF';
-                    }else if(onePoint[0] == '不在位'){
-                        colorStr = '#D94600';
-                    }else if(onePoint[0] == '未知'){
-                        colorStr = '#8E8E8E';
-                    }else if(onePoint[0] == '待修复'){
-                        colorStr = '#FFE6D9';
-                    }else if(onePoint[0] == '告警'){
-                        colorStr = '#FFFF6F';
-                    }else if(onePoint[0] == '降级'){
-                        colorStr = '#FFF8D7';
-                    }else if(onePoint[0] == '错误'){
-                        colorStr = '#FF8F59';
+                    var valFloat = parseFloat(onePoint[1]);
+                    var colorStr = '#2E2E2E';//背景色
+                    if(i == 0){
+                        if(valFloat >= 90){
+                            colorStr = '#00CD00';
+                        }else if(valFloat >= 80){
+                            colorStr = '#B3EE3A';
+                        }else if(valFloat >= 70){
+                            colorStr = '#EEEE00';
+                        }else if(valFloat >= 60){
+                            colorStr = '#DAA520';
+                        }else if(valFloat >= 50){
+                            colorStr = '#EE7600';
+                        }else if(valFloat >= 40){
+                            colorStr = '#EE6A50';
+                        }else {
+                            colorStr = '#EE2C2C';
+                        }
                     }
                     colors.push(colorStr);
                 }
-                pie.css("height","75%");
                 pie.highcharts({
                     chart: {
                         plotBackgroundColor: null,
@@ -4529,7 +4532,12 @@ myChart.setOption({
                         plotShadow: false
                     },
                     title: {
-                        text: title
+                        text: tdData.value[0][1] + unit,
+                        floating: true,
+                        style: {
+                            "color" : colors[0],
+                            "font-size" : '12px'
+                        }
                     },
                     legend: {
                         layout: 'vertical',
@@ -4564,49 +4572,31 @@ myChart.setOption({
                         }
                     },
                     tooltip: {
-                        enabled: true,
-                        useHTML:true,
-                        formatter : function(){
-                            var y = this.y;
-                            var newUnit = unit;
-                            if(unit == 'Byte'){
-                                if(this.y > (1024 * 1024 * 1024)){
-                                    y = (parseFloat(y) / (parseFloat(1024) * parseFloat(1024) * parseFloat(1024))).toFixed(2);
-                                    newUnit = 'GB';
-                                }else if(this.y > (1024 * 1024)){
-                                    y = (parseFloat(y) / (parseFloat(1024) * parseFloat(1024))).toFixed(2);
-                                    newUnit = 'MB';
-                                }else if(this.y > 1024){
-                                    y = (parseFloat(y) / parseFloat(1024)).toFixed(2);
-                                    newUnit = 'KB';
-                                }
-                            }
-                            $("div.highcharts-tooltip span").css("white-space", "inherit");//允许换行
-                            //重新生成
-
-                            var content = '<div style="font-size: 8px;width: 100px;display:block;word-break: break-all;word-wrap: break-word;">' + this.key+'：'+y+newUnit +'<br/>'
-                                +'</div>';
-                            return content;
-                            //return this.key + ":"+"<br/>"+ y + newUnit;
-                        }
+                        enabled: false
                     },
                     plotOptions: {
                         pie: {
-                            allowPointSelect: true,
+                            allowPointSelect: false,
                             cursor: 'pointer',
                             colors: colors,
                             dataLabels: {
-                                enabled: true,
-                                distance: 5
+                                enabled: false
                             },
                             showInLegend: false
                         }
                     },
                     series: [{
                         type: 'pie',
+                        innerSize: '99%',
                         name: '',
                         data: value
                     }]
+                }, function(c) { // 图表初始化完毕后的会掉函数
+                    // 环形图圆心
+                    var centerY = c.series[0].center[1];
+                    var titleHeight = parseInt(c.title.styles.fontSize);
+                    // 动态设置标题位置
+                    c.setTitle({y:centerY + titleHeight/2});
                 });
             }else {
                 pie.highcharts({
@@ -4656,8 +4646,20 @@ myChart.setOption({
                         formatter : function(){
                             var y = this.y;
                             var newUnit = unit;
+                            var testStr = '';
+                            if(isDiskArray){
+                                var rateValue = (parseFloat(y) / totalValue * 100).toFixed(2);
+                                testStr = '（' + rateValue + '%）';
+                            }
+
                             if(unit == 'Byte'){
-                                if(this.y > (1024 * 1024 * 1024)){
+                                if(this.y > (1024 * 1024 * 1024 * 1024 * 1024)){
+                                    y = (parseFloat(y) / (parseFloat(1024) * parseFloat(1024) * parseFloat(1024) * parseFloat(1024) * parseFloat(1024))).toFixed(2);
+                                    newUnit = 'PB';
+                                }else if(this.y > (1024 * 1024 * 1024 * 1024)){
+                                    y = (parseFloat(y) / (parseFloat(1024) * parseFloat(1024) * parseFloat(1024) * parseFloat(1024))).toFixed(2);
+                                    newUnit = 'TB';
+                                }else if(this.y > (1024 * 1024 * 1024)){
                                     y = (parseFloat(y) / (parseFloat(1024) * parseFloat(1024) * parseFloat(1024))).toFixed(2);
                                     newUnit = 'GB';
                                 }else if(this.y > (1024 * 1024)){
@@ -4671,7 +4673,7 @@ myChart.setOption({
                             $("div.highcharts-tooltip span").css("white-space", "inherit");//允许换行
                             //重新生成
 
-                            var content = '<div style="font-size: 10px;width: 200px;display:block;word-break: break-all;word-wrap: break-word;">' + this.key+'：'+y+newUnit +'<br/>'
+                            var content = '<div style="font-size: 10px;width: 200px;display:block;word-break: break-all;word-wrap: break-word;">' + this.key+'：'+y+newUnit+testStr +'<br/>'
                                 +'</div>';
                             return content;
                             //return this.key + ":"+"<br/>"+ y + newUnit;
@@ -5131,27 +5133,16 @@ myChart.setOption({
                     //	height="220px";
                     titleShow=tdData[0].title;//"数据库占用性能";
                 }else if(tdData[0].type=="tabPanel"){
-                    if(tdData[0].categoryId=="MacroSANStorages"){
-                        titleShow="性能信息";
-                        height=180;//575;
-                        width=532;
-                    }else{
-                        container.css("float","left");
-                        width=700;
-                        height=243;
-                        //width=760;
-                    }
+                    container.css("float","left");
+                    width=700;
+                    height=243;
+                    //width=760;
                 }
 
                 for(var i=0;i<tdData.length;i++){
 
 
                     var content = $("<div/>").width(childwidth).height(childHeight);
-                    if(tdData[0].type=="tabPanel"){
-                        if(tdData[0].categoryId=="MacroSANStorages"){
-                            content.css("margin-left", "22px");
-                        }
-                    }
 
                     content.width(tdData[i].width);
                     /*	if(tdData[0].type=="tabPanel"){
@@ -5224,17 +5215,28 @@ myChart.setOption({
                 var panelDom = $("<div/>");
                 var content = $("<div/>").width('100%').height('100%').css({"position":"relative"});
 
-                if(tdData.type == 'pie'){
-                    if(tdData.categoryId!=undefined && tdData.categoryId!=null){
-                        if(tdData.categoryId == 'MacroSANStorages'){
-                            container.css("height", "30%");
-                            container.css("width", "32%");
-                            container.css("float","left");
-                            width=173;
-                            height=142;
-                        }
+                if(tdData.type == 'pie' && tdData.categoryId != undefined && tdData.categoryId != null && tdData.categoryId == 'HIKVisionStorages'){
+                    if(tdData.forType == 'spaceUsage'){
+                        container.css("height", "30%");
+                        container.css("width", "49%");
+                        container.css("float","left");
+                        width=220;
+                        height=170;
+                    }else if(tdData.forType == 'nodeDevice'){
+                        container.css("height", "30%");
+                        container.css("width", "48%");
+                        container.css("float","left");
+                        width=220;
+                        height=170;
+                    }else {
+                        container.css("height", "30%");
+                        container.css("width", "32%");
+                        container.css("float","left");
+                        width=173;
+                        height=146;
                     }
                 }
+
                 /*
 				if(tdData.type == 'environmentPanel'){
 						width = 440;
