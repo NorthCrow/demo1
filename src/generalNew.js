@@ -174,12 +174,7 @@ $(function() {
             }
 
             tdDom.append(divDom);
-            var isSpecial = false;
-            if(divData[0].categoryId != undefined && divData[0].categoryId != null && divData[0].categoryId == 'HIKVisionStorages'){
-                isSpecial = true;
-            }
-
-            if(divData.length==2 && !divData[0].companType && !isSpecial){//gauge
+            if(divData.length==2 && !divData[0].companType){//gauge
                 switch(divData[0].type){
                     case "mulitpie" :
                         this.createmulitpie(divDom, divData,divData.length);
@@ -191,7 +186,7 @@ $(function() {
                 }
 
 
-            }else if((divData.length==4 || divData.length==3  || divData.length==2) && !divData[0].companType && !isSpecial){
+            }else if((divData.length==4 || divData.length==3  || divData.length==2) && !divData[0].companType){
                 if(divData[0].type=='tabPanel'){
                     tdDom.attr('colspan',divData[0].colspan);
                     this.createtabPanel(divDom, divData,divData.length);
@@ -2672,7 +2667,7 @@ myChart.setOption({
 
                     graph=tdDom;
                     metricId=tdData.id;
-                }else if(tdData.id=='throughput' || tdData.id=='NetworkUsed' || tdData.id=='KBytesTransSpeed' || tdData.id=='icmpDelayTime' || tdData.id=='cpuLoad' ){
+                }else if(tdData.id=='throughput' || tdData.id=='totalIops' || tdData.id=='NetworkUsed' || tdData.id=='KBytesTransSpeed' || tdData.id=='icmpDelayTime' || tdData.id=='cpuLoad' ){
                     graph = this.createPanel(tdDom, tdData, tdSize);
 
                     metricId=tdData.id;
@@ -2700,7 +2695,7 @@ myChart.setOption({
                     tdData.historyDataColTim = [];
                     //graph.css('height','100%');
                 }else{
-                    if(tdData.id=='throughput' || tdData.id=='NetworkUsed' || tdData.id=='KBytesTransSpeed' || tdData.id=='icmpDelayTime' || tdData.id=='cpuLoad' || tdData.id=='SystemTemperature'){
+                    if(tdData.id=='throughput' || tdData.id=='totalIops' || tdData.id=='NetworkUsed' || tdData.id=='KBytesTransSpeed' || tdData.id=='icmpDelayTime' || tdData.id=='cpuLoad' || tdData.id=='SystemTemperature'){
                         //	graph.css('width','95%');
                         graph.css('height','80%');
 
@@ -2718,7 +2713,7 @@ myChart.setOption({
 
                 var html='<fieldset style="width: 100%; height: 100%;"><legend>'+tdData.title+'(最近4小时)</legend>'+'单位:'+unit+'</span><div class="lines" style="width: 100%; height: 80%;"></div></fieldset>';//width: 100%; height: 35%; float: left;
 
-                if(tdData.id=='throughput' || tdData.id=='NetworkUsed' || tdData.id=='KBytesTransSpeed' || tdData.id=='icmpDelayTime' || tdData.id=='cpuLoad' ){
+                if(tdData.id=='throughput' || tdData.id=='totalIops' || tdData.id=='NetworkUsed' || tdData.id=='KBytesTransSpeed' || tdData.id=='icmpDelayTime' || tdData.id=='cpuLoad' ){
 
                     var currentgraph=graph;
                     currentgraph.css({"height":"85%"});
@@ -3644,92 +3639,249 @@ myChart.setOption({
             li += "<span class='hardware_name'>" + data.processorName + "</span>"
             container.find("ul").append("<li title='" + data.processorName + "'>" + li + "</li>");
         },
+        //if(this.cfg.resourceId=="HuaweiOceanStorDorado5300V6" || this.cfg.resourceId=="NetappStorage")
+        createChildResInfoNew : function(tdData, ul){
+            if(tdData == undefined){
+                return false;
+            }
+            var li = $("<li/>");
+            var icoDiv = $("<div/>").addClass("stroage_img");
+            var desDiv = $("<div/>").addClass("stroage_txt");
+
+            icoDiv.addClass("storage-disk-l");//1
+
+            desDiv.append("<p>" + tdData.name + "</p>");
+            desDiv.append("<p>总数：" + tdData.count + "</p>");
+            desDiv.append("<p>故障：<span>" + tdData.critical + "</span></p>");
+            li.append(icoDiv).append(desDiv);
+            ul.append(li);
+        },
         createTabs : function(tdDom, tdData, tdSize){
             var that = this;
             var tabsDom =tdDom;// this.createPanel(tdDom, tdData, tdSize);
             var tabsHeight = '206px';
-            for(var i = 0; i < tdData.childtype.length; i ++){
-                var childType = tdData.childtype[i];
 
-                switch(childType){
-                    case "prefmetric":
-                        this.createPrefMetric(tabsDom);
-                        break;
-                    case "infometric":
-                        this.createInfoMetric(tabsDom);
-                        break;
-                    case "storageDevice":
-                        tabsHeight = '236px';
-                        this.createStorageDevice(tdData.value, tabsDom);
-                        break;
-                    case "accessDevice":
-                        tabsHeight = '243px';
-                        this.createAccessDevice(tdData.value, tabsDom);
-                        break;
-                    case "alarm-unRestore":
-                        tabsHeight = '245px';
+            if(this.cfg.resourceId=="HuaweiOceanStorDorado5300V6"){
 
-                        this.createAlarmTabs(tabsDom,'unRecovered');
-                        break;
-                    case "alarm-restore":
-                        tabsHeight = '245px';
-                        this.createAlarmTabs(tabsDom,'recovered');
-                        break;
+                for(var i = 0; i < tdData.childtype.length; i ++){
+                    var childType = tdData.childtype[i];
 
-                    default :
-                        this.createChildPanel(tabsDom, childType);
-                        break;
+                    switch(childType){
+                        case "prefmetric":
+                            this.createPrefMetric(tabsDom);
+                            break;
+                        case "infometric":
+                            this.createInfoMetric(tabsDom);
+                            break;
+                        case "storageDevice":
+
+
+                            //var storageDeviceDom = $("<div/>").addClass('storageDevice').attr('title', '');
+                            //tabsDom.append(storageDeviceDom);
+
+                            if(tdData.value == undefined || JSON.stringify(tdData.value) == "{}"){
+                                return false;
+                            }
+                            var controlComponent = $("<div/>").addClass("Storage"), controlUl = $("<ul/>");
+                            controlComponent.append('<h6 style="top: -10px;">存储组件</h6>').append(controlUl);
+                            controlUl.css("height","auto");
+                            controlUl.css("padding-left","20px");
+                            controlComponent.css("height","auto");
+                            controlComponent.css("margin","0px 2px");
+                            controlComponent.css("border","0px solid #2877c3");
+                            if(tdData.value.StorageProcessorSystem != null && tdData.value.StorageProcessorSystem != undefined){
+                                this.createChildResInfoNew(tdData.value.StorageProcessorSystem, controlUl);
+                            }
+                            if(tdData.value.Node != null && tdData.value.Node != undefined){
+                                this.createChildResInfoNew(tdData.value.Node, controlUl);
+                            }
+                            this.createChildResInfoNew(tdData.value.FCPort, controlUl);
+
+                            this.createChildResInfoNew(tdData.value.DiskDrive, controlUl);
+                            this.createChildResInfoNew(tdData.value.StoragePool, controlUl);
+                            this.createChildResInfoNew(tdData.value.StorageVolume, controlUl);
+                            this.createChildResInfoNew(tdData.value.Power, controlUl);
+                            this.createChildResInfoNew(tdData.value.Fan, controlUl);
+                            this.createChildResInfoNew(tdData.value.HardDisk, controlUl);
+                            this.createChildResInfoNew(tdData.value.Disk, controlUl);
+
+
+                            tabsDom.append(controlComponent);
+                            //storageDeviceDom.append("<div class='clear'></div>");
+
+
+                            break;
+                        case "accessDevice":
+                            tabsHeight = '243px';
+                            this.createAccessDevice(tdData.value, tabsDom);
+                            break;
+                        case "alarm-unRestore":
+                            tabsHeight = '245px';
+
+                            this.createAlarmTabs(tabsDom,'unRecovered');
+                            break;
+                        case "alarm-restore":
+                            tabsHeight = '245px';
+                            this.createAlarmTabs(tabsDom,'recovered');
+                            break;
+
+                        default :
+                            this.createChildPanel(tabsDom, childType);
+                            break;
+                    }
+
                 }
-            }
 
-            var insId = this.cfg.instanceId;
-            tabsDom.addClass('easyui-tabs').tabs({
-                width : '100%',
-                height : tabsHeight,
-                fit : false,
-                onSelect:function(title,index){
-                    //信息指标添加刷新按钮
-                    if(index == 1){
-                        var InfoMetricDom = tabsDom.find('div .tabs-wrap > ul');
-//			        	InfoMetricDom.append('<span style="height: 27px; float: right; margin-right: 10px;">'+
-//				        			'<span class="ico ico-refrash" style="margin-top: 5px;" title="手动采集"></span>'+
-//				        			'</span>');
-//			        	InfoMetricDom.append(
-////			        			'<div class="right">'+
-//			        			'<a id="collectBtn" style="height: 27px; float: right; class="l-btn l-btn-small l-btn-plain" group="">'+
-//			        			'<span class="l-btn-left l-btn-icon-left">'+
-//			        			'<div class="btn-l">'+
-//			        			'<div class="btn-r">'+
-//			        			'<div class="btn-m">'+
-//			        			'<span class="l-btn-text">采集信息指标</span>'+
-//			        			'<span class="l-btn-icon icon-refrash"> </span>'+
-//			        			'</div>'+
-//			        			'</div>'+
-//			        			'</div>'+
-//			        			'</span>'+
-//			        			'</a>');
-//			        			'</div>');
-                        InfoMetricDom.find('#collectBtn').click(function(){
-                            oc.util.ajax({
-                                url: oc.resource.getUrl('portal/resource/resourceDetailInfo/getMetricHand.htm'),
-                                data:{instanceId : insId},
-                                timeout:60000,
-                                success:function(data){
-                                    if(data.data=="FALSE"){
-                                        alert("采集失败");
-                                    }else{
-                                        alert("指标采集在1分钟以后完成，请稍后进入该页面...");
-                                        InfoMetricDom.find('#collectBtn').unbind("click");
-                                    }
+            }else if(this.cfg.resourceId=="NetappStorage"){
 
-                                }
-                            });
-                        })
-                    }else{
-                        $('div .tabs-wrap > ul > #collectBtn').remove();
+                for(var i = 0; i < tdData.childtype.length; i ++){
+                    var childType = tdData.childtype[i];
+
+                    switch(childType){
+                        case "prefmetric":
+                            this.createPrefMetric(tabsDom);
+                            break;
+                        case "infometric":
+                            this.createInfoMetric(tabsDom);
+                            break;
+                        case "storageDevice":
+
+
+                            //var storageDeviceDom = $("<div/>").addClass('storageDevice').attr('title', '');
+                            //tabsDom.append(storageDeviceDom);
+
+                            if(tdData.value == undefined || JSON.stringify(tdData.value) == "{}"){
+                                return false;
+                            }
+                            var controlComponent = $("<div/>").addClass("Storage"), controlUl = $("<ul/>");
+                            controlComponent.append('<h6 style="top: -10px;">存储组件</h6>').append(controlUl);
+                            controlUl.css("height","auto");
+                            controlUl.css("padding-left","20px");
+                            controlComponent.css("height","auto");
+                            controlComponent.css("margin","0px 2px");
+                            controlComponent.css("border","0px solid #2877c3");
+
+                            if(tdData.value.Node != null && tdData.value.Node != undefined){
+                                this.createChildResInfoNew(tdData.value.Node, controlUl);
+                            }
+                            this.createChildResInfoNew(tdData.value.Host, controlUl);
+
+                            this.createChildResInfoNew(tdData.value.Instance, controlUl);
+                            this.createChildResInfoNew(tdData.value.Disk, controlUl);
+                            this.createChildResInfoNew(tdData.value.DiskDrive, controlUl);
+                            this.createChildResInfoNew(tdData.value.StorageVolume, controlUl);
+
+
+                            tabsDom.append(controlComponent);
+                            //storageDeviceDom.append("<div class='clear'></div>");
+
+
+                            break;
+                        case "accessDevice":
+                            tabsHeight = '243px';
+                            this.createAccessDevice(tdData.value, tabsDom);
+                            break;
+                        case "alarm-unRestore":
+                            tabsHeight = '245px';
+
+                            this.createAlarmTabs(tabsDom,'unRecovered');
+                            break;
+                        case "alarm-restore":
+                            tabsHeight = '245px';
+                            this.createAlarmTabs(tabsDom,'recovered');
+                            break;
+
+                        default :
+                            this.createChildPanel(tabsDom, childType);
+                            break;
+                    }
+
+                }
+
+            }else {
+                for(var i = 0; i < tdData.childtype.length; i ++){
+                    var childType = tdData.childtype[i];
+
+                    switch(childType){
+                        case "prefmetric":
+                            this.createPrefMetric(tabsDom);
+                            break;
+                        case "infometric":
+                            this.createInfoMetric(tabsDom);
+                            break;
+                        case "storageDevice":
+                            tabsHeight = '236px';
+                            this.createStorageDevice(tdData.value, tabsDom);
+                            break;
+                        case "accessDevice":
+                            tabsHeight = '243px';
+                            this.createAccessDevice(tdData.value, tabsDom);
+                            break;
+                        case "alarm-unRestore":
+                            tabsHeight = '245px';
+
+                            this.createAlarmTabs(tabsDom,'unRecovered');
+                            break;
+                        case "alarm-restore":
+                            tabsHeight = '245px';
+                            this.createAlarmTabs(tabsDom,'recovered');
+                            break;
+
+                        default :
+                            this.createChildPanel(tabsDom, childType);
+                            break;
                     }
                 }
-            });
+
+                var insId = this.cfg.instanceId;
+                tabsDom.addClass('easyui-tabs').tabs({
+                    width : '100%',
+                    height : tabsHeight,
+                    fit : false,
+                    onSelect:function(title,index){
+                        //信息指标添加刷新按钮
+                        if(index == 1){
+                            var InfoMetricDom = tabsDom.find('div .tabs-wrap > ul');
+                            //			        	InfoMetricDom.append('<span style="height: 27px; float: right; margin-right: 10px;">'+
+                            //				        			'<span class="ico ico-refrash" style="margin-top: 5px;" title="手动采集"></span>'+
+                            //				        			'</span>');
+                            //			        	InfoMetricDom.append(
+                            ////			        			'<div class="right">'+
+                            //			        			'<a id="collectBtn" style="height: 27px; float: right; class="l-btn l-btn-small l-btn-plain" group="">'+
+                            //			        			'<span class="l-btn-left l-btn-icon-left">'+
+                            //			        			'<div class="btn-l">'+
+                            //			        			'<div class="btn-r">'+
+                            //			        			'<div class="btn-m">'+
+                            //			        			'<span class="l-btn-text">采集信息指标</span>'+
+                            //			        			'<span class="l-btn-icon icon-refrash"> </span>'+
+                            //			        			'</div>'+
+                            //			        			'</div>'+
+                            //			        			'</div>'+
+                            //			        			'</span>'+
+                            //			        			'</a>');
+                            //			        			'</div>');
+                            InfoMetricDom.find('#collectBtn').click(function(){
+                                oc.util.ajax({
+                                    url: oc.resource.getUrl('portal/resource/resourceDetailInfo/getMetricHand.htm'),
+                                    data:{instanceId : insId},
+                                    timeout:60000,
+                                    success:function(data){
+                                        if(data.data=="FALSE"){
+                                            alert("采集失败");
+                                        }else{
+                                            alert("指标采集在1分钟以后完成，请稍后进入该页面...");
+                                            InfoMetricDom.find('#collectBtn').unbind("click");
+                                        }
+
+                                    }
+                                });
+                            })
+                        }else{
+                            $('div .tabs-wrap > ul > #collectBtn').remove();
+                        }
+                    }
+                });
+            }
         },
         createAlarmTabs : function(tabsDom,alarmType){
             var that = this;
@@ -3804,10 +3956,6 @@ myChart.setOption({
             }
             var controlComponent = $("<div/>").addClass("Storage"), controlUl = $("<ul/>");
             controlComponent.append("<h6>控制组件</h6>").append(controlUl);
-            //控制组件布局
-            controlComponent.css("height", "auto");
-            controlUl.css("height", "auto");
-
             if(tdData.StorageProcessorSystem != null && tdData.StorageProcessorSystem != undefined){
                 this.createChildResInfo(tdData.StorageProcessorSystem, controlUl);
             }
@@ -3818,20 +3966,10 @@ myChart.setOption({
 
             var storageComponent = $("<div/>").addClass("Storage"), storageUl = $("<ul/>");
             storageComponent.append("<h6>存储组件</h6>").append(storageUl);
-            //存储组件布局
-            storageComponent.css("height", "auto");
-            storageUl.css("height", "auto");
-
             this.createChildResInfo(tdData.DiskDrive, storageUl);
             this.createChildResInfo(tdData.StoragePool, storageUl);
             this.createChildResInfo(tdData.StorageVolume, storageUl);
             // this.createChildResInfo(tdData.MDisk, storageUl);
-
-            this.createChildResInfo(tdData.Fan, storageUl);
-            this.createChildResInfo(tdData.Power, storageUl);
-            this.createChildResInfo(tdData.Battery, storageUl);
-            this.createChildResInfo(tdData.NetInterface, storageUl);
-            this.createChildResInfo(tdData.Partition, storageUl);
 
             storageDeviceDom.append(controlComponent);
             storageDeviceDom.append(storageComponent);
@@ -4282,15 +4420,31 @@ myChart.setOption({
             var li = $("<li/>");
             var icoDiv = $("<div/>").addClass("stroage_img");
             var desDiv = $("<div/>").addClass("stroage_txt");
-
-            //显示子资源图片
-            icoDiv.css("width", "42px");
-            icoDiv.css("height", "40px");
-            icoDiv.css("margin-right", "5px");
-            icoDiv.css("margin-top", "10px");
-            icoDiv.addClass(tdData.type);
-
-
+            switch (tdData.type) {
+                case "StorageProcessorSystem":
+                    icoDiv.addClass("controller-l");//3
+                    break;
+                case "Node":
+                    icoDiv.addClass("controller-l");//3
+                    break;
+                case "FCPort":
+                    icoDiv.addClass("fiber-l");//5
+                    break;
+                case "DiskDrive":
+                    icoDiv.addClass("physics-disk-l");//2
+                    break;
+                case "StoragePool":
+                    icoDiv.addClass("storage-disk-l");//1
+                    break;
+                case "StorageVolume":
+                    icoDiv.addClass("storage-volume-l");//4
+                    break;
+                case "MDisk":
+                    icoDiv.addClass("storage-volume-l");//4
+                    break;
+                default:
+                    break;
+            }
             desDiv.append("<p>" + tdData.name + "</p>");
             desDiv.append("<p>总数：" + tdData.count + "</p>");
             desDiv.append("<p>故障：<span>" + tdData.critical + "</span></p>");
@@ -4479,52 +4633,52 @@ myChart.setOption({
             var tmpValue = [];
             var value = tdData.value;
             if(value==undefined || value==null || value=="" || value.length==0){
-                if(tdData.categoryId != undefined && tdData.categoryId != null && tdData.categoryId == 'HIKVisionStorages' && tdData.forType != 'spaceUsage' && tdData.forType != 'nodeDevice'){
+                if(tdData.categoryId!=undefined && tdData.categoryId!=null && tdData.categoryId=="MacroSANStorages"){
                     pie.html("<div style='margin-left: 15px;width: 150px;' class='otherTabTip'>抱歉，没有可展示的数据！</div>");
-                }else {
+                }else{
                     pie.html("<div class='otherTabTip'>抱歉，没有可展示的数据！</div>");
                 }
                 return ;
             }else{
 
             }
-            var totalValue = 0.0;
-            var isDiskArray = tdData.categoryId != undefined && tdData.categoryId != null && tdData.categoryId == 'DiskArray' ? true : false;
             for(var i = 0; i < tdData.value.length; i++){
                 var onePoint = tdData.value[i];
                 tmpValue.push([onePoint[0], parseFloat(onePoint[1])]);
-                totalValue = totalValue + parseFloat(onePoint[1]);
+
             }
             value = tmpValue;
 
             var title = tdData.resourceId == 'IBMDS' && tdData.totalSpace != undefined ? {text:tdData.totalSpace} : null;
 
-            if(tdData.categoryId != undefined && tdData.categoryId != null && tdData.categoryId == 'HIKVisionStorages' && tdData.forType != 'spaceUsage'){
-                //设置环形百分比图颜色
+            if(tdData.categoryId!=undefined && tdData.categoryId!=null && tdData.categoryId=="MacroSANStorages"){
+                //设置饼图颜色
                 var colors = [];
                 for(var i = 0; i < tdData.value.length; i++){
                     var onePoint = tdData.value[i];
-                    var valFloat = parseFloat(onePoint[1]);
-                    var colorStr = '#2E2E2E';//背景色
-                    if(i == 0){
-                        if(valFloat >= 90){
-                            colorStr = '#00CD00';
-                        }else if(valFloat >= 80){
-                            colorStr = '#B3EE3A';
-                        }else if(valFloat >= 70){
-                            colorStr = '#EEEE00';
-                        }else if(valFloat >= 60){
-                            colorStr = '#DAA520';
-                        }else if(valFloat >= 50){
-                            colorStr = '#EE7600';
-                        }else if(valFloat >= 40){
-                            colorStr = '#EE6A50';
-                        }else {
-                            colorStr = '#EE2C2C';
-                        }
+                    var colorStr = '#8080C0';//默认
+                    if(onePoint[0] == '正常'){
+                        colorStr = '#00DB00';
+                    }else if(onePoint[0] == '故障'){
+                        colorStr = '#FF5809';
+                    }else if(onePoint[0] == '忽略'){
+                        colorStr = '#80FFFF';
+                    }else if(onePoint[0] == '不在位'){
+                        colorStr = '#D94600';
+                    }else if(onePoint[0] == '未知'){
+                        colorStr = '#8E8E8E';
+                    }else if(onePoint[0] == '待修复'){
+                        colorStr = '#FFE6D9';
+                    }else if(onePoint[0] == '告警'){
+                        colorStr = '#FFFF6F';
+                    }else if(onePoint[0] == '降级'){
+                        colorStr = '#FFF8D7';
+                    }else if(onePoint[0] == '错误'){
+                        colorStr = '#FF8F59';
                     }
                     colors.push(colorStr);
                 }
+                pie.css("height","75%");
                 pie.highcharts({
                     chart: {
                         plotBackgroundColor: null,
@@ -4532,12 +4686,7 @@ myChart.setOption({
                         plotShadow: false
                     },
                     title: {
-                        text: tdData.value[0][1] + unit,
-                        floating: true,
-                        style: {
-                            "color" : colors[0],
-                            "font-size" : '12px'
-                        }
+                        text: title
                     },
                     legend: {
                         layout: 'vertical',
@@ -4572,31 +4721,49 @@ myChart.setOption({
                         }
                     },
                     tooltip: {
-                        enabled: false
+                        enabled: true,
+                        useHTML:true,
+                        formatter : function(){
+                            var y = this.y;
+                            var newUnit = unit;
+                            if(unit == 'Byte'){
+                                if(this.y > (1024 * 1024 * 1024)){
+                                    y = (parseFloat(y) / (parseFloat(1024) * parseFloat(1024) * parseFloat(1024))).toFixed(2);
+                                    newUnit = 'GB';
+                                }else if(this.y > (1024 * 1024)){
+                                    y = (parseFloat(y) / (parseFloat(1024) * parseFloat(1024))).toFixed(2);
+                                    newUnit = 'MB';
+                                }else if(this.y > 1024){
+                                    y = (parseFloat(y) / parseFloat(1024)).toFixed(2);
+                                    newUnit = 'KB';
+                                }
+                            }
+                            $("div.highcharts-tooltip span").css("white-space", "inherit");//允许换行
+                            //重新生成
+
+                            var content = '<div style="font-size: 8px;width: 100px;display:block;word-break: break-all;word-wrap: break-word;">' + this.key+'：'+y+newUnit +'<br/>'
+                                +'</div>';
+                            return content;
+                            //return this.key + ":"+"<br/>"+ y + newUnit;
+                        }
                     },
                     plotOptions: {
                         pie: {
-                            allowPointSelect: false,
+                            allowPointSelect: true,
                             cursor: 'pointer',
                             colors: colors,
                             dataLabels: {
-                                enabled: false
+                                enabled: true,
+                                distance: 5
                             },
                             showInLegend: false
                         }
                     },
                     series: [{
                         type: 'pie',
-                        innerSize: '99%',
                         name: '',
                         data: value
                     }]
-                }, function(c) { // 图表初始化完毕后的会掉函数
-                    // 环形图圆心
-                    var centerY = c.series[0].center[1];
-                    var titleHeight = parseInt(c.title.styles.fontSize);
-                    // 动态设置标题位置
-                    c.setTitle({y:centerY + titleHeight/2});
                 });
             }else {
                 pie.highcharts({
@@ -4646,20 +4813,8 @@ myChart.setOption({
                         formatter : function(){
                             var y = this.y;
                             var newUnit = unit;
-                            var testStr = '';
-                            if(isDiskArray){
-                                var rateValue = (parseFloat(y) / totalValue * 100).toFixed(2);
-                                testStr = '（' + rateValue + '%）';
-                            }
-
                             if(unit == 'Byte'){
-                                if(this.y > (1024 * 1024 * 1024 * 1024 * 1024)){
-                                    y = (parseFloat(y) / (parseFloat(1024) * parseFloat(1024) * parseFloat(1024) * parseFloat(1024) * parseFloat(1024))).toFixed(2);
-                                    newUnit = 'PB';
-                                }else if(this.y > (1024 * 1024 * 1024 * 1024)){
-                                    y = (parseFloat(y) / (parseFloat(1024) * parseFloat(1024) * parseFloat(1024) * parseFloat(1024))).toFixed(2);
-                                    newUnit = 'TB';
-                                }else if(this.y > (1024 * 1024 * 1024)){
+                                if(this.y > (1024 * 1024 * 1024)){
                                     y = (parseFloat(y) / (parseFloat(1024) * parseFloat(1024) * parseFloat(1024))).toFixed(2);
                                     newUnit = 'GB';
                                 }else if(this.y > (1024 * 1024)){
@@ -4673,7 +4828,7 @@ myChart.setOption({
                             $("div.highcharts-tooltip span").css("white-space", "inherit");//允许换行
                             //重新生成
 
-                            var content = '<div style="font-size: 10px;width: 200px;display:block;word-break: break-all;word-wrap: break-word;">' + this.key+'：'+y+newUnit+testStr +'<br/>'
+                            var content = '<div style="font-size: 10px;width: 200px;display:block;word-break: break-all;word-wrap: break-word;">' + this.key+'：'+y+newUnit +'<br/>'
                                 +'</div>';
                             return content;
                             //return this.key + ":"+"<br/>"+ y + newUnit;
@@ -5087,6 +5242,8 @@ myChart.setOption({
             }else if(tdData.type=='others' ){
                 if(tdData.height=='35%'){
                     height=126;
+                }else if(tdData.height=='33%'){
+                    height=260;
                 }else{
                     height=217;
                 }
@@ -5133,16 +5290,34 @@ myChart.setOption({
                     //	height="220px";
                     titleShow=tdData[0].title;//"数据库占用性能";
                 }else if(tdData[0].type=="tabPanel"){
-                    container.css("float","left");
-                    width=700;
-                    height=243;
-                    //width=760;
+                    if(tdData[0].categoryId=="MacroSANStorages"){
+                        titleShow="性能信息";
+                        height=180;//575;
+                        width=532;
+                    }else{
+                        container.css("float","left");
+                        width=700;
+                        height=243;
+
+
+                        if(this.cfg.resourceId=="HuaweiOceanStorDorado5300V6" || this.cfg.resourceId=="NetappStorage"){
+                            height=260;
+                        }
+
+
+                        //width=760;
+                    }
                 }
 
                 for(var i=0;i<tdData.length;i++){
 
 
                     var content = $("<div/>").width(childwidth).height(childHeight);
+                    if(tdData[0].type=="tabPanel"){
+                        if(tdData[0].categoryId=="MacroSANStorages"){
+                            content.css("margin-left", "22px");
+                        }
+                    }
 
                     content.width(tdData[i].width);
                     /*	if(tdData[0].type=="tabPanel"){
@@ -5215,28 +5390,17 @@ myChart.setOption({
                 var panelDom = $("<div/>");
                 var content = $("<div/>").width('100%').height('100%').css({"position":"relative"});
 
-                if(tdData.type == 'pie' && tdData.categoryId != undefined && tdData.categoryId != null && tdData.categoryId == 'HIKVisionStorages'){
-                    if(tdData.forType == 'spaceUsage'){
-                        container.css("height", "30%");
-                        container.css("width", "49%");
-                        container.css("float","left");
-                        width=220;
-                        height=170;
-                    }else if(tdData.forType == 'nodeDevice'){
-                        container.css("height", "30%");
-                        container.css("width", "48%");
-                        container.css("float","left");
-                        width=220;
-                        height=170;
-                    }else {
-                        container.css("height", "30%");
-                        container.css("width", "32%");
-                        container.css("float","left");
-                        width=173;
-                        height=146;
+                if(tdData.type == 'pie'){
+                    if(tdData.categoryId!=undefined && tdData.categoryId!=null){
+                        if(tdData.categoryId == 'MacroSANStorages'){
+                            container.css("height", "30%");
+                            container.css("width", "32%");
+                            container.css("float","left");
+                            width=173;
+                            height=142;
+                        }
                     }
                 }
-
                 /*
 				if(tdData.type == 'environmentPanel'){
 						width = 440;
